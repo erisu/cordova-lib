@@ -16,5 +16,8 @@ install:
   #- "(cd cordova-common && npm install)"
   #- (cd cordova-fetch && npm install && npm link ../cordova-common)
 
+before_install:
+  - npm -v | awk '/^5\.(5|6|7)\./ { system("npm install -g npm@6.1.0") }'
+
 script:
   - "npm test"
