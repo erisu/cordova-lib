@@ -31,7 +31,6 @@ module.exports = function run (options) {
 
         // This is needed as .build modifies opts
         var optsClone = _.clone(options.options);
-        optsClone.nobuild = true;
 
         var hooksRunner = new HooksRunner(projectRoot);
         return hooksRunner.fire('before_run', options)
@@ -43,17 +42,11 @@ module.exports = function run (options) {
             }).then(function () {
                 // Deploy in parallel (output gets intermixed though...)
                 return Q.all(options.platforms.map(function (platform) {
-
-                    var buildPromise = options.options.nobuild ? Q() :
-                        platform_lib.getPlatformApi(platform).build(options.options);
-
-                    return buildPromise
-                        .then(function () {
-                            return hooksRunner.fire('before_deploy', options);
-                        })
-                        .then(function () {
-                            return platform_lib.getPlatformApi(platform).run(optsClone);
-                        });
+                    return Promise.resolve().then(function () {
+                        return hooksRunner.fire('before_deploy', options);
+                    }).then(function () {
+                        return platform_lib.getPlatformApi(platform).run(optsClone);
+                    });
                 }));
             }).then(function () {
                 return hooksRunner.fire('after_run', options);
