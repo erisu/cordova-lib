@@ -116,6 +116,10 @@ module.exports = {
         install: function (asset, plugin_dir, wwwDest) {
             var src = path.join(plugin_dir, asset.src);
             var dest = path.join(wwwDest, asset.target);
+            var destDir = path.parse(dest).dir;
+            if (destDir !== '' && !fs.existsSync(destDir)) {
+                shell.mkdir('-p', destDir);
+            }
 
             if (fs.statSync(src).isDirectory()) {
                 shell.cp('-Rf', src + '/*', dest);
