@@ -70,7 +70,7 @@ describe('build command', function () {
     describe('success', function () {
         it('Test 003 : should run inside a Cordova-based project with at least one added platform and call both prepare and compile', function () {
             return cordova.build(['android', 'ios']).then(function () {
-                var opts = Object({ platforms: [ 'android', 'ios' ], verbose: false, options: Object({ }) });
+                var opts = Object({ platforms: ['android', 'ios'], verbose: false, options: Object({ }) });
                 expect(prepare_spy).toHaveBeenCalledWith(opts);
                 expect(compile_spy).toHaveBeenCalledWith(opts);
             });
@@ -93,7 +93,7 @@ describe('build command', function () {
             });
             it('Test 007 : should fire after hooks through the hooker module', function () {
                 return cordova.build('android').then(function () {
-                    expect(fire.calls.argsFor(1)).toEqual([ 'after_build', { platforms: [ 'android' ], verbose: false, options: {} } ]);
+                    expect(fire.calls.argsFor(1)).toEqual(['after_build', { platforms: ['android'], verbose: false, options: {} }]);
                 });
             });
         });

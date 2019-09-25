@@ -25,7 +25,7 @@ var url = require('url');
 var platforms = require('../platforms/platforms');
 
 // Global configuration paths
-var global_config_path = process.env['CORDOVA_HOME'];
+var global_config_path = process.env.CORDOVA_HOME;
 if (!global_config_path) {
     var HOME = process.env[(process.platform.slice(0, 3) === 'win') ? 'USERPROFILE' : 'HOME'];
     global_config_path = path.join(HOME, '.cordova');

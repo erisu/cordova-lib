@@ -36,16 +36,16 @@ var plugman = {
 };
 
 plugman.commands = {
-    'config': function (cli_opts) {
+    config: function (cli_opts) {
         plugman.config(cli_opts.argv.remain, function (err) {
             if (err) throw err;
             else console.log('done');
         });
     },
-    'owner': function (cli_opts) {
+    owner: function (cli_opts) {
         plugman.owner(cli_opts.argv.remain);
     },
-    'install': function (cli_opts) {
+    install: function (cli_opts) {
         if (!cli_opts.platform || !cli_opts.project || !cli_opts.plugin) {
             return console.log(plugman.help());
         }
@@ -78,7 +78,7 @@ plugman.commands = {
 
         return p;
     },
-    'uninstall': function (cli_opts) {
+    uninstall: function (cli_opts) {
         if (!cli_opts.platform || !cli_opts.project || !cli_opts.plugin) {
             return console.log(plugman.help());
         }
@@ -97,7 +97,7 @@ plugman.commands = {
 
         return p;
     },
-    'search': function (cli_opts) {
+    search: function (cli_opts) {
         plugman.search(cli_opts.argv.remain, function (err, plugins) {
             if (err) throw err;
             else {
@@ -107,7 +107,7 @@ plugman.commands = {
             }
         });
     },
-    'info': function (cli_opts) {
+    info: function (cli_opts) {
         plugman.info(cli_opts.argv.remain, function (err, plugin_info) {
             if (err) throw err;
             else {
@@ -121,17 +121,17 @@ plugman.commands = {
             }
         });
     },
-    'publish': function () {
+    publish: function () {
         events.emit('error', 'The publish functionality is not supported anymore since the Cordova Plugin registry\n' +
             'is moving to read-only state. For publishing use corresponding \'npm\' commands.\n\n' +
             'If for any reason you still need for \'plugman publish\' - consider downgrade to plugman@0.23.3');
     },
-    'unpublish': function (cli_opts) {
+    unpublish: function (cli_opts) {
         events.emit('error', 'The publish functionality is not supported anymore since the Cordova Plugin registry\n' +
             'is moving to read-only state. For publishing/unpublishing use corresponding \'npm\' commands.\n\n' +
             'If for any reason you still need for \'plugman unpublish\' - consider downgrade to plugman@0.23.3');
     },
-    'create': function (cli_opts) {
+    create: function (cli_opts) {
         if (!cli_opts.name || !cli_opts.plugin_id || !cli_opts.plugin_version) {
             return console.log(plugman.help());
         }
@@ -145,14 +145,14 @@ plugman.commands = {
         }
         plugman.create(cli_opts.name, cli_opts.plugin_id, cli_opts.plugin_version, cli_opts.path || '.', cli_variables);
     },
-    'platform': function (cli_opts) {
-        var operation = cli_opts.argv.remain[ 0 ] || '';
+    platform: function (cli_opts) {
+        var operation = cli_opts.argv.remain[0] || '';
         if ((operation !== 'add' && operation !== 'remove') || !cli_opts.platform_name) {
             return console.log(plugman.help());
         }
         plugman.platform({ operation: operation, platform_name: cli_opts.platform_name });
     },
-    'createpackagejson': function (cli_opts) {
+    createpackagejson: function (cli_opts) {
         var plugin_path = cli_opts.argv.remain[0];
         if (!plugin_path) {
             return console.log(plugman.help());

@@ -101,8 +101,8 @@ describe('emulate command', function () {
             it('Test 006 : should leave parameters unchanged', function () {
                 return cordova.run({ platforms: ['blackberry10'], options: { password: '1q1q' } })
                     .then(function () {
-                        expect(prepare_spy).toHaveBeenCalledWith({ platforms: [ 'blackberry10' ], options: { password: '1q1q', 'couldBeModified': 'insideBuild' }, verbose: false });
-                        expect(platformApi.build).toHaveBeenCalledWith({ password: '1q1q', 'couldBeModified': 'insideBuild' });
+                        expect(prepare_spy).toHaveBeenCalledWith({ platforms: ['blackberry10'], options: { password: '1q1q', couldBeModified: 'insideBuild' }, verbose: false });
+                        expect(platformApi.build).toHaveBeenCalledWith({ password: '1q1q', couldBeModified: 'insideBuild' });
                         expect(platformApi.run).toHaveBeenCalledWith({ password: '1q1q', nobuild: true });
                     });
             });

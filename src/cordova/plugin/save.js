@@ -75,13 +75,13 @@ function save (projectRoot, opts) {
 }
 
 function getSpec (pluginSource, projectRoot, pluginName) {
-    if (pluginSource.hasOwnProperty('url') || pluginSource.hasOwnProperty('path')) {
+    if (Object.prototype.hasOwnProperty.call(pluginSource, 'url') || Object.prototype.hasOwnProperty.call(pluginSource, 'path')) {
         return pluginSource.url || pluginSource.path;
     }
 
     var version = null;
     var scopedPackage = null;
-    if (pluginSource.hasOwnProperty('id')) {
+    if (Object.prototype.hasOwnProperty.call(pluginSource, 'id')) {
         // Note that currently version is only saved here if it was explicitly specified when the plugin was added.
         var parsedSpec = pluginSpec.parse(pluginSource.id);
         version = parsedSpec.version;

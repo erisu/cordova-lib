@@ -27,7 +27,7 @@ describe('cordova/plugin/save', function () {
     var projectRoot = '/some/path';
     var cfg_parser_mock = function () {};
     var fake_plugin_list = ['VRPlugin', 'MastodonSocialPlugin'];
-    var fake_fetch_json = { 'VRPlugin': {}, 'MastodonSocialPlugin': {} };
+    var fake_fetch_json = { VRPlugin: {}, MastodonSocialPlugin: {} };
     var plugin_info_provider_mock = function () {};
 
     beforeEach(function () {
@@ -63,35 +63,44 @@ describe('cordova/plugin/save', function () {
 
         it('plugins are being removed first and then only top level plugins are being restored', function () {
             var fake_fetch_json =
-                { 'VRPlugin': { 'source': {
-                    'type': 'registry',
-                    'id': 'id'
-                },
-                'is_top_level': true
-                },
-                'MastodonSocialPlugin': { 'source': {
-                    'type': 'registry',
-                    'id': 'id'
-                },
-                'is_top_level': false } };
+                {
+                    VRPlugin: {
+                        source: {
+                            type: 'registry',
+                            id: 'id'
+                        },
+                        is_top_level: true
+                    },
+                    MastodonSocialPlugin: {
+                        source: {
+                            type: 'registry',
+                            id: 'id'
+                        },
+                        is_top_level: false
+                    }
+                };
 
             fs.readFileSync.and.returnValue(JSON.stringify(fake_fetch_json));
             return save(projectRoot).then(function () {
                 expect(cfg_parser_mock.prototype.removePlugin).toHaveBeenCalledWith('VRPlugin');
                 expect(cfg_parser_mock.prototype.removePlugin).toHaveBeenCalledWith('MastodonSocialPlugin');
-                expect(cfg_parser_mock.prototype.addPlugin).toHaveBeenCalledWith(Object({ name: 'VRPlugin' }), [ ]);
-                expect(cfg_parser_mock.prototype.addPlugin).not.toHaveBeenCalledWith(Object({ name: 'MastodonSocialPlugin' }), [ ]);
+                expect(cfg_parser_mock.prototype.addPlugin).toHaveBeenCalledWith(Object({ name: 'VRPlugin' }), []);
+                expect(cfg_parser_mock.prototype.addPlugin).not.toHaveBeenCalledWith(Object({ name: 'MastodonSocialPlugin' }), []);
                 expect(cfg_parser_mock.prototype.write).toHaveBeenCalled();
             });
         });
 
         it('should write individual plugin specs to config.xml', function () {
             var fake_fetch_json =
-                { 'VRPlugin': { 'source': {
-                    'type': 'registry',
-                    'id': 'id'
-                },
-                'is_top_level': true } };
+                {
+                    VRPlugin: {
+                        source: {
+                            type: 'registry',
+                            id: 'id'
+                        },
+                        is_top_level: true
+                    }
+                };
             fs.readFileSync.and.returnValue(JSON.stringify(fake_fetch_json));
             spyOn(save, 'getSpec').and.returnValue('1.0.0');
             return save(projectRoot).then(function () {
@@ -102,17 +111,21 @@ describe('cordova/plugin/save', function () {
 
         it('should write individual plugin variables to config.xml', function () {
             var fake_fetch_json =
-                { 'VRPlugin': { 'source': {
-                    'type': 'registry',
-                    'id': 'id'
-                },
-                'is_top_level': true,
-                'variables': {
-                    'var 1': ' '
-                } } };
+                {
+                    VRPlugin: {
+                        source: {
+                            type: 'registry',
+                            id: 'id'
+                        },
+                        is_top_level: true,
+                        variables: {
+                            'var 1': ' '
+                        }
+                    }
+                };
             fs.readFileSync.and.returnValue(JSON.stringify(fake_fetch_json));
             return save(projectRoot).then(function () {
-                expect(cfg_parser_mock.prototype.addPlugin).toHaveBeenCalledWith(jasmine.any(Object), [ Object({ name: 'var 1', value: ' ' }) ]);
+                expect(cfg_parser_mock.prototype.addPlugin).toHaveBeenCalledWith(jasmine.any(Object), [Object({ name: 'var 1', value: ' ' })]);
                 expect(cfg_parser_mock.prototype.write).toHaveBeenCalled();
             });
         });
@@ -146,7 +159,7 @@ describe('cordova/plugin/save', function () {
             expect(save.getPluginVariables()).toEqual([]);
         });
         it('if variables are passed in, should return result & get added to name and value', function () {
-            expect(save.getPluginVariables({ variable: 'var 1' })).toEqual([ { name: 'variable', value: 'var 1' } ]);
+            expect(save.getPluginVariables({ variable: 'var 1' })).toEqual([{ name: 'variable', value: 'var 1' }]);
         });
     });
 
