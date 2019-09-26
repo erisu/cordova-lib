@@ -19,25 +19,37 @@
        under the License.
 */
 
-var shell = require('shelljs'),
-    path  = require('path'),
-    ROOT = path.join(__dirname, '..', '..');
+var path = require('path');
+var os = require('os');
+var child_process = require('child_process');
+const { CordovaError } = require('cordova-common');
+var ROOT = path.join(__dirname, '..', '..');
 
 /*
  * Starts running logcat in the shell.
+ * Returns a promise.
  */
-module.exports.run = function() {
-    var cmd = 'adb logcat | grep -v nativeGetEnabledTags';
-    var result = shell.exec(cmd, {silent:false, async:false});
-    if (result.code > 0) {
-        console.error('ERROR: Failed to run logcat command.');
-        console.error(result.output);
-        process.exit(2);
-    }
-}
+module.exports.run = function () {
+    return new Promise((resolve, reject) => {
+        var adb = child_process.spawn('adb', ['logcat'], { cwd: os.tmpdir() });
 
-module.exports.help = function() {
+        adb.stdout.on('data', function (data) {
+            var lines = data ? data.toString().split('\n') : [];
+            var out = lines.filter(function (x) { return x.indexOf('nativeGetEnabledTags') < 0; });
+            console.log(out.join('\n'));
+        });
+
+        adb.stderr.on('data', console.error);
+        adb.on('close', function (code) {
+            if (code > 0) return reject(new CordovaError('Failed to run logcat command.'));
+
+            return resolve();
+        });
+    });
+};
+
+module.exports.help = function () {
     console.log('Usage: ' + path.relative(process.cwd(), path.join(ROOT, 'cordova', 'log')));
     console.log('Gives the logcat output on the command line.');
     process.exit(0);
-}
+};

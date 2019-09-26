@@ -120,7 +120,7 @@ describe('util module', function () {
             fs.copySync(path.join(__dirname, 'fixtures', 'platforms', helpers.testPlatform), path.join(platforms, helpers.testPlatform));
             return util.getInstalledPlatformsWithVersions(temp)
                 .then(function (platformMap) {
-                    expect(platformMap.android).toBe('3.1.0');
+                    expect(platformMap.android).toBe('8.2.0-dev');
                 });
         });
     });

@@ -19,77 +19,93 @@
        under the License.
 */
 
-var shell = require('shelljs'),
-    path  = require('path'),
-    build = require('./build'),
-    appinfo = require('./appinfo'),
-    exec  = require('child_process').exec,
-    ROOT = path.join(__dirname, '..', '..');
+var build = require('./build');
+var path = require('path');
+var Adb = require('./Adb');
+var AndroidManifest = require('./AndroidManifest');
+var spawn = require('cordova-common').superspawn.spawn;
+var CordovaError = require('cordova-common').CordovaError;
+var events = require('cordova-common').events;
 
 /**
- * Returns a list of the device ID's found
+ * Returns a promise for the list of the device ID's found
+ * @param lookHarder When true, try restarting adb if no devices are found.
  */
-module.exports.list = function() {
-    var cmd = 'adb devices';
-    var result = shell.exec(cmd, {silent:true, async:false});
-    if (result.code > 0) {
-        console.error('Failed to execute android command \'' + cmd + '\'.');
-        process.exit(2);
-    } else {
-        var response = result.output.split('\n');
-        var device_list = [];
-        for (var i = 1; i < response.length; i++) {
-            if (response[i].match(/\w+\tdevice/) && !response[i].match(/emulator/)) {
-                device_list.push(response[i].replace(/\tdevice/, '').replace('\r', ''));
-            }
+module.exports.list = function (lookHarder) {
+    return Adb.devices().then(function (list) {
+        if (list.length === 0 && lookHarder) {
+            // adb kill-server doesn't seem to do the trick.
+            // Could probably find a x-platform version of killall, but I'm not actually
+            // sure that this scenario even happens on non-OSX machines.
+            return spawn('killall', ['adb']).then(function () {
+                events.emit('verbose', 'Restarting adb to see if more devices are detected.');
+                return Adb.devices();
+            }, function () {
+                // For non-killall OS's.
+                return list;
+            });
         }
-        return device_list;
-    }
-}
+        return list;
+    });
+};
+
+module.exports.resolveTarget = function (target) {
+    return this.list(true).then(function (device_list) {
+        if (!device_list || !device_list.length) {
+            return Promise.reject(new CordovaError('Failed to deploy to device, no devices found.'));
+        }
+        // default device
+        target = target || device_list[0];
+
+        if (device_list.indexOf(target) < 0) {
+            return Promise.reject(new CordovaError('ERROR: Unable to find target \'' + target + '\'.'));
+        }
+
+        return build.detectArchitecture(target).then(function (arch) {
+            return { target: target, arch: arch, isEmulator: false };
+        });
+    });
+};
 
 /*
  * Installs a previously built application on the device
  * and launches it.
+ * Returns a promise.
  */
-module.exports.install = function(target) {
-    var device_list = this.list();
-    if (device_list.length > 0) {
-        // default device
-        target = typeof target !== 'undefined' ? target : device_list[0];
-        if (device_list.indexOf(target) > -1) {
-            var apk_path = build.get_apk();
-            var launchName = appinfo.getActivityName();
-            console.log('Installing app on device...');
-            cmd = 'adb -s ' + target + ' install -r ' + apk_path;
-            var install = shell.exec(cmd, {silent:false, async:false});
-            if (install.error || install.output.match(/Failure/)) {
-                console.error('ERROR : Failed to install apk to device : ');
-                console.error(install.output);
-                process.exit(2);
-            }
-
-            //unlock screen
-            cmd = 'adb -s ' + target + ' shell input keyevent 82';
-            shell.exec(cmd, {silent:true, async:false});
-
-            // launch the application
-            console.log('Launching application...');
-            cmd = 'adb -s ' + target + ' shell am start -W -a android.intent.action.MAIN -n ' + launchName;
-            var launch = shell.exec(cmd, {silent:true, async:false});
-            if(launch.code > 0) {
-                console.error('ERROR : Failed to launch application on emulator : ' + launch.error);
-                console.error(launch.output);
-                process.exit(2);
-            } else {
-                console.log('LAUNCH SUCCESS');
-            }
-        } else {
-            console.error('ERROR : Unable to find target \'' + target + '\'.');
-            console.error('Failed to deploy to device.');
-            process.exit(2);
+module.exports.install = function (target, buildResults) {
+    return Promise.resolve().then(function () {
+        if (target && typeof target === 'object') {
+            return target;
         }
-    } else {
-        console.error('ERROR : Failed to deploy to device, no devices found.');
-        process.exit(2);
-    }
-}
+        return module.exports.resolveTarget(target);
+    }).then(function (resolvedTarget) {
+        var apk_path = build.findBestApkForArchitecture(buildResults, resolvedTarget.arch);
+        var manifest = new AndroidManifest(path.join(__dirname, '../../app/src/main/AndroidManifest.xml'));
+        var pkgName = manifest.getPackageId();
+        var launchName = pkgName + '/.' + manifest.getActivity().getName();
+        events.emit('log', 'Using apk: ' + apk_path);
+        events.emit('log', 'Package name: ' + pkgName);
+
+        return Adb.install(resolvedTarget.target, apk_path, { replace: true }).catch(function (error) {
+            // CB-9557 CB-10157 only uninstall and reinstall app if the one that
+            // is already installed on device was signed w/different certificate
+            if (!/INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES/.test(error.toString())) { throw error; }
+
+            events.emit('warn', 'Uninstalling app from device and reinstalling it again because the ' +
+                'installed app already signed with different key');
+
+            // This promise is always resolved, even if 'adb uninstall' fails to uninstall app
+            // or the app doesn't installed at all, so no error catching needed.
+            return Adb.uninstall(resolvedTarget.target, pkgName).then(function () {
+                return Adb.install(resolvedTarget.target, apk_path, { replace: true });
+            });
+        }).then(function () {
+            // unlock screen
+            return Adb.shell(resolvedTarget.target, 'input keyevent 82');
+        }).then(function () {
+            return Adb.start(resolvedTarget.target, launchName);
+        }).then(function () {
+            events.emit('log', 'LAUNCH SUCCESS');
+        });
+    });
+};
