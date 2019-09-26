@@ -17,7 +17,6 @@
        under the License.
 */
 
-var Q = require('q');
 var create = require('./create');
 var fs = require('fs');
 var shell = require('shelljs');
@@ -34,9 +33,9 @@ module.exports.run = function (argv) {
     var projectPath = argv[2];
     if (!fs.existsSync(projectPath)) {
         // if specified project path is not valid then reject promise
-        Q.reject('Browser platform does not exist here: ' + projectPath);
+        Promise.reject('Browser platform does not exist here: ' + projectPath);
     }
-    return Q().then(function () {
+    return Promise.resolve().then(function () {
         console.log('Removing existing browser platform.');
         shellfatal(shell.rm, '-rf', projectPath);
         create.createProject(projectPath);
