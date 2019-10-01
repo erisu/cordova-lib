@@ -17,6 +17,7 @@
     under the License.
 */
 
+const execa = require('execa');
 var path = require('path');
 var fs = require('fs-extra');
 var ActionStack = require('cordova-common').ActionStack;
@@ -29,7 +30,6 @@ var HooksRunner = require('../hooks/HooksRunner');
 var cordovaUtil = require('../cordova/util');
 var npmUninstall = require('cordova-fetch').uninstall;
 
-var superspawn = require('cordova-common').superspawn;
 var PlatformJson = require('cordova-common').PlatformJson;
 var PluginInfoProvider = require('cordova-common').PluginInfoProvider;
 var variableMerge = require('../plugman/variable-merge');
@@ -83,7 +83,7 @@ module.exports.uninstallPlatform = function (platform, project_dir, id, plugins_
         if (options.platformVersion) {
             return Promise.resolve(options.platformVersion);
         }
-        return Promise.resolve(superspawn.maybeSpawn(path.join(project_dir, 'cordova', 'version'), [], { chmod: true }));
+        return Promise.resolve(execa(path.join(project_dir, 'cordova', 'version'), [], { chmod: true }).then(data => data.stdout));
     }).then(function (platformVersion) {
         options.platformVersion = platformVersion;
         return runUninstallPlatform(current_stack, platform, project_dir, plugin_dir, plugins_dir, options);
