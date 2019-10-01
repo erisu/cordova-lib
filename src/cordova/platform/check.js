@@ -15,12 +15,12 @@
     under the License.
 */
 
+const execa = require('execa');
 var fs = require('fs-extra');
 var path = require('path');
 var os = require('os');
 var semver = require('semver');
 var events = require('cordova-common').events;
-var superspawn = require('cordova-common').superspawn;
 var cordova_util = require('../util');
 var HooksRunner = require('../../hooks/HooksRunner');
 
@@ -35,16 +35,16 @@ function check (hooksRunner, projectRoot) {
 }
 
 function getCordovaUpdateMessage () {
-    return superspawn.spawn('npm',
+    return execa('npm',
         ['--loglevel=silent', '--json', 'outdated', 'cordova-lib'],
         { cwd: path.dirname(require.main.filename) }
-    ).then(function (output) {
+    ).then(function (data) {
         var vers;
         try {
-            var json = JSON.parse(output)['cordova-lib'];
+            var json = JSON.parse(data.stdout)['cordova-lib'];
             vers = [json.latest, json.current];
         } catch (e) {
-            vers = ('' || output).match(/cordova-lib@(\S+)\s+\S+\s+current=(\S+)/);
+            vers = ('' || data.stdout).match(/cordova-lib@(\S+)\s+\S+\s+current=(\S+)/);
         }
         if (vers) {
             return [vers[1], vers[2]];
@@ -135,5 +135,5 @@ function getPlatformUpdateMessage (platform, h, projectRoot, scratch) {
 
 function getPlatformVersion (projectRoot, platform) {
     const bin = path.join(projectRoot, 'platforms', platform, 'cordova/version');
-    return superspawn.maybeSpawn(bin, [], { chmod: true });
+    return execa(bin, [], { chmod: true }).then(data => data.stdout);
 }

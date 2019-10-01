@@ -15,6 +15,7 @@
  under the License.
  */
 
+const execa = require('execa');
 const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
@@ -24,7 +25,7 @@ const shebangCommand = require('shebang-command');
 const cordovaUtil = require('../cordova/util');
 const scriptsFinder = require('./scriptsFinder');
 const Context = require('./Context');
-const { CordovaError, events, superspawn } = require('cordova-common');
+const { CordovaError, events } = require('cordova-common');
 
 const isWindows = os.platform().slice(0, 3) === 'win';
 
@@ -215,13 +216,14 @@ function runScriptViaChildProcessSpawn (script, context) {
     execOpts.env.CORDOVA_HOOK = script.fullPath;
     execOpts.env.CORDOVA_CMDLINE = process.argv.join(' ');
 
-    return superspawn.spawn(command, args, execOpts)
-        .catch(function (err) {
+    return execa(command, args, execOpts)
+        .then(data => data.stdout)
+        .catch(function (error) {
             // Don't treat non-executable files as errors. They could be READMEs, or Windows-only scripts.
-            if (!isWindows && err.code === 'EACCES') {
+            if (!isWindows && error.errno === 'EACCES') {
                 events.emit('verbose', 'Skipped non-executable file: ' + script.fullPath);
             } else {
-                throw new Error('Hook failed with error code ' + err.code + ': ' + script.fullPath);
+                throw new Error('Hook failed with error code ' + error.errno + ': ' + script.fullPath);
             }
         });
 }

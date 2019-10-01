@@ -239,11 +239,12 @@ function getInstalledPlatformsWithVersions (project_dir) {
     var platforms_on_fs = listPlatforms(project_dir);
 
     return Promise.all(platforms_on_fs.map(function (p) {
-        var superspawn = require('cordova-common').superspawn;
-        return superspawn.maybeSpawn(path.join(project_dir, 'platforms', p, 'cordova', 'version'), [], { chmod: true })
-            .then(function (v) {
-                result[p] = v || null;
-            }, function (v) {
+        const execa = require('execa');
+
+        return execa(path.join(project_dir, 'platforms', p, 'cordova', 'version'), [], { chmod: true })
+            .then(function (data) {
+                result[p] = data.stdout || null;
+            }, function () {
                 result[p] = 'broken';
             });
     })).then(function () {

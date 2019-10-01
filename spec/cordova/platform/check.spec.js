@@ -17,7 +17,6 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 var fs = require('fs-extra');
 var events = require('cordova-common').events;
-var superspawn = require('cordova-common').superspawn;
 var rewire = require('rewire');
 var platform_check = rewire('../../../src/cordova/platform/check');
 var platform = require('../../../src/cordova/platform');
@@ -26,20 +25,24 @@ var cordova_util = require('../../../src/cordova/util');
 describe('cordova/platform/check', function () {
     var projectRoot = '/some/path';
     var hooks_mock;
+    let execaSpy;
 
     beforeEach(function () {
         spyOn(events, 'emit');
-        spyOn(superspawn, 'spawn').and.callThrough();
         spyOn(fs, 'removeSync');
         spyOn(cordova_util, 'listPlatforms').and.returnValue(['ios']);
         spyOn(platform, 'add').and.returnValue(Promise.resolve());
+
+        execaSpy = jasmine.createSpy('execa');
+        execaSpy.and.returnValue(Promise.resolve({ stdout: '' }));
+        platform_check.__set__('execa', execaSpy);
     });
 
     it('If no platforms, platforms cannot be updated', function () {
         cordova_util.listPlatforms.and.returnValue([]);
         return platform_check(hooks_mock, projectRoot).then(function () {
             expect(events.emit).toHaveBeenCalledWith('results', jasmine.stringMatching(/No platforms can be updated/));
-            expect(superspawn.spawn).toHaveBeenCalledWith('npm', ['--loglevel=silent', '--json', 'outdated', 'cordova-lib'], jasmine.any(Object));
+            expect(execaSpy).toHaveBeenCalledWith('npm', ['--loglevel=silent', '--json', 'outdated', 'cordova-lib'], jasmine.any(Object));
             expect(fs.removeSync).toHaveBeenCalledWith(jasmine.any(String));
         });
     });
@@ -52,14 +55,13 @@ describe('cordova/platform/check', function () {
     });
 
     it('Should warn if version-empty', function () {
-        superspawn.spawn.and.returnValue(Promise.resolve());
         return platform_check(hooks_mock, projectRoot).then(function () {
             expect(events.emit).toHaveBeenCalledWith('results', jasmine.stringMatching(/current version script failed to return a version/));
         });
     });
 
     it('Should warn if version-failed', function () {
-        spyOn(superspawn, 'maybeSpawn').and.returnValue(Promise.resolve('version-failed'));
+        execaSpy.and.returnValue(Promise.resolve({ stdout: 'version-failed' }));
         return platform_check(hooks_mock, projectRoot).then(function () {
             expect(events.emit).toHaveBeenCalledWith('results', jasmine.stringMatching(/current version script failed, and/));
         });
