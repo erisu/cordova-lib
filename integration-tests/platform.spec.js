@@ -128,7 +128,7 @@ describe('cordova/platform end-to-end', () => {
     it('Test 007 : should add and remove platform from node_modules directory', () => {
         return Promise.resolve()
             .then(() => {
-                return cordova.platform('add', 'browser', { 'save': true });
+                return cordova.platform('add', 'browser', { save: true });
             })
             .then(() => {
                 expect(path.join(nodeModulesDir, 'cordova-browser')).toExist();

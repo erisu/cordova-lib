@@ -86,7 +86,7 @@ function add (projectRoot, hooksRunner, opts) {
                         pluginInfoProvider: pluginInfoProvider,
                         variables: opts.cli_variables,
                         is_top_level: true,
-                        save_exact: opts['save_exact'] || false,
+                        save_exact: opts.save_exact || false,
                         production: opts.production
                     };
 
@@ -120,7 +120,7 @@ function add (projectRoot, hooksRunner, opts) {
                             usePlatformWww: true,
                             nohooks: opts.nohooks,
                             force: opts.force,
-                            save_exact: opts['save_exact'] || false,
+                            save_exact: opts.save_exact || false,
                             production: opts.production
                         };
 
@@ -508,7 +508,7 @@ function getFailedRequirements (reqs, pluginMap, platformMap, cordovaVersion) {
     }
 
     for (var req in reqs) {
-        if (reqs.hasOwnProperty(req) && typeof req === 'string' && semver.validRange(reqs[req])) {
+        if (Object.prototype.hasOwnProperty.call(reqs, req) && typeof req === 'string' && semver.validRange(reqs[req])) {
             var badInstalledVersion = null;
             // remove potential whitespace
             var trimmedReq = req.trim();

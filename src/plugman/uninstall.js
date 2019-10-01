@@ -297,7 +297,7 @@ function runUninstallPlatform (actions, platform, project_dir, plugin_dir, plugi
 
         var hooksRunner = new HooksRunner(projectRoot);
         var hooksRunnerOptions = {
-            cordova: { platforms: [ platform ] },
+            cordova: { platforms: [platform] },
             plugin: {
                 id: pluginInfo.id,
                 pluginInfo: pluginInfo,

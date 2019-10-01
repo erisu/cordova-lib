@@ -84,7 +84,7 @@ describe('cordova/restore-util', () => {
             return o;
         }, {});
         if (Object.keys(expectedSpecs).length > 0) {
-            let specs = Object.assign({}, pkgJson.dependencies, pkgJson.devDependencies);
+            const specs = Object.assign({}, pkgJson.dependencies, pkgJson.devDependencies);
             expect(specs).toEqual(jasmine.objectContaining(expectedSpecs));
         }
     }
