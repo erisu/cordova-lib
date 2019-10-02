@@ -1,6 +1,8 @@
+.*
+appveyor.yml
+spec
 spec-cordova
 spec-plugman
-spec
+integration-tests
 coverage
-src/plugman/defaults.json
 temp
