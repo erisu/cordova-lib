@@ -66,7 +66,7 @@ module.exports = function installPlugin (platform, project_dir, id, plugins_dir,
     project_dir = cordovaUtil.convertToRealPathSafe(project_dir);
     plugins_dir = cordovaUtil.convertToRealPathSafe(plugins_dir);
     options = options || {};
-    if (!options.hasOwnProperty('is_top_level')) options.is_top_level = true;
+    if (!Object.prototype.hasOwnProperty.call(options, 'is_top_level')) options.is_top_level = true;
 
     plugins_dir = plugins_dir || path.join(project_dir, 'cordova', 'plugins');
 
@@ -237,7 +237,7 @@ function getEngines (pluginInfo, platform, project_dir, plugin_dir) {
                 throw new Error('Security violation: scriptSrc ' + scriptSrcPath + ' is out of plugin dir ' + plugin_dir);
             }
             if (platformIndex > -1 || engine.platform === '*') {
-                uncheckedEngines.push({ 'name': theName, 'platform': engine.platform, 'scriptSrc': scriptSrcPath, 'minVersion': engine.version });
+                uncheckedEngines.push({ name: theName, platform: engine.platform, scriptSrc: scriptSrcPath, minVersion: engine.version });
             }
         }
     });
@@ -327,7 +327,7 @@ function runInstall (actions, platform, project_dir, plugin_dir, plugins_dir, op
             if (projectRoot) {
                 // using unified hooksRunner
                 var hookOptions = {
-                    cordova: { platforms: [ platform ] },
+                    cordova: { platforms: [platform] },
                     plugin: {
                         id: pluginInfo.id,
                         pluginInfo: pluginInfo,

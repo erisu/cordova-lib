@@ -35,8 +35,8 @@ const plugins_install_dir = path.join(project, 'cordova/plugins');
 const plugins_dir = path.join(__dirname, '../spec/plugman/plugins');
 const plugins = {
     'org.test.plugins.dummyplugin': path.join(plugins_dir, 'org.test.plugins.dummyplugin'),
-    'A': path.join(plugins_dir, 'dependencies', 'A'),
-    'C': path.join(plugins_dir, 'dependencies', 'C')
+    A: path.join(plugins_dir, 'dependencies', 'A'),
+    C: path.join(plugins_dir, 'dependencies', 'C')
 };
 
 function setupProject (name) {
@@ -59,15 +59,15 @@ describe('plugman/uninstall', () => {
             .then(function () {
                 return install('android', project1, plugins['org.test.plugins.dummyplugin']);
             }).then(function () {
-                return install('android', project1, plugins['A']);
+                return install('android', project1, plugins.A);
             }).then(function () {
-                return install('android', project2, plugins['C']);
+                return install('android', project2, plugins.C);
             }).then(function () {
-                return install('android', project2, plugins['A']);
+                return install('android', project2, plugins.A);
             }).then(function () {
-                return install('android', project3, plugins['A']);
+                return install('android', project3, plugins.A);
             }).then(function () {
-                return install('android', project3, plugins['C']);
+                return install('android', project3, plugins.C);
             }).then(function (result) {
                 expect(result).toEqual(true);
             });
@@ -139,9 +139,9 @@ describe('plugman/uninstall', () => {
                     }, Promise.resolve());
                 }
 
-                return validateReturnedResultFor([ true, {}, [], 'foo', function () {} ], true)
+                return validateReturnedResultFor([true, {}, [], 'foo', function () {}], true)
                     .then(function () {
-                        return validateReturnedResultFor([ false, null, undefined, '' ], false);
+                        return validateReturnedResultFor([false, null, undefined, ''], false);
                     });
             });
 
@@ -277,12 +277,12 @@ describe('plugman/uninstall', () => {
             return uninstall('android', project, plugins['org.test.plugins.dummyplugin'])
                 .then(function () {
                     // Fails... A depends on
-                    return uninstall('android', project, plugins['C']);
+                    return uninstall('android', project, plugins.C);
                 }).catch(function (err) {
                     expect(err.stack).toMatch(/The plugin 'C' is required by \(A\), skipping uninstallation./);
                 }).then(function () {
                     // dependencies on C,D ... should this only work with --recursive? prompt user..?
-                    return uninstall('android', project, plugins['A']);
+                    return uninstall('android', project, plugins.A);
                 });
         });
     });

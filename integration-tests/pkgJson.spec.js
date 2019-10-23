@@ -89,20 +89,24 @@ describe('pkgJson', function () {
     }
 
     const customMatchers = {
-        toSatisfy: () => ({ compare (version, spec) {
-            const pass = semver.satisfies(version, spec);
-            const expectation = (pass ? 'not ' : '') + 'to satisfy';
-            return {
-                pass, message: `expected ${version} ${expectation} ${spec}`
-            };
-        } }),
-        tohaveMinSatisfyingVersion: () => ({ compare (spec, version) {
-            const pass = specWithMinSatisfyingVersion(version).asymmetricMatch(spec);
-            const expectation = (pass ? 'not ' : '') + 'to have minimal satisfying version';
-            return {
-                pass, message: `expected ${spec} ${expectation} ${version}`
-            };
-        } })
+        toSatisfy: () => ({
+            compare (version, spec) {
+                const pass = semver.satisfies(version, spec);
+                const expectation = (pass ? 'not ' : '') + 'to satisfy';
+                return {
+                    pass, message: `expected ${version} ${expectation} ${spec}`
+                };
+            }
+        }),
+        tohaveMinSatisfyingVersion: () => ({
+            compare (spec, version) {
+                const pass = specWithMinSatisfyingVersion(version).asymmetricMatch(spec);
+                const expectation = (pass ? 'not ' : '') + 'to have minimal satisfying version';
+                return {
+                    pass, message: `expected ${spec} ${expectation} ${version}`
+                };
+            }
+        })
     };
 
     // Add our custom matchers
@@ -410,7 +414,7 @@ describe('pkgJson', function () {
             const PLATFORM = 'ios';
             const PLUGIN = 'cordova-plugin-splashscreen';
 
-            setPkgJson('cordova.platforms', [ PLATFORM ]);
+            setPkgJson('cordova.platforms', [PLATFORM]);
             setPkgJson('dependencies', {
                 [PLUGIN]: '^3.2.2',
                 [`cordova-${PLATFORM}`]: '^4.5.4'
@@ -424,7 +428,7 @@ describe('pkgJson', function () {
 
             return cordova.platform('add', PLATFORM, { save: true }).then(function () {
                 // No change to pkg.json platforms or spec for ios.
-                expect(getPkgJson('cordova.platforms')).toEqual([ PLATFORM ]);
+                expect(getPkgJson('cordova.platforms')).toEqual([PLATFORM]);
                 // Config.xml and ios/cordova/version check.
                 const version = platformVersion(PLATFORM);
                 // Check that pkg.json and ios/cordova/version versions "satisfy" each other.
@@ -476,7 +480,7 @@ describe('pkgJson', function () {
             const PLATFORM = 'ios';
             const PLUGIN = 'cordova-plugin-splashscreen';
 
-            setPkgJson('cordova.platforms', [ PLATFORM ]);
+            setPkgJson('cordova.platforms', [PLATFORM]);
             setPkgJson('dependencies', {
                 [`cordova-${PLATFORM}`]: '^4.2.1',
                 [PLUGIN]: '^3.2.2'
@@ -490,7 +494,7 @@ describe('pkgJson', function () {
 
             return cordova.platform('add', `${PLATFORM}@4.5.4`, { save: true }).then(function () {
                 // Pkg.json has ios.
-                expect(getPkgJson('cordova.platforms')).toEqual([ PLATFORM ]);
+                expect(getPkgJson('cordova.platforms')).toEqual([PLATFORM]);
             }).then(function () {
                 return cordova.plugin('add', `${PLUGIN}@4.0.0`, { save: true });
             }).then(function () {

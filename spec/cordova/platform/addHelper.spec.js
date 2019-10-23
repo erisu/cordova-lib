@@ -31,7 +31,7 @@ describe('cordova/platform/addHelper', function () {
 
     beforeEach(function () {
         fake_platform = {
-            'platform': 'atari'
+            platform: 'atari'
         };
         package_json_mock = {
             cordova: {},
@@ -207,7 +207,7 @@ describe('cordova/platform/addHelper', function () {
                 it('should invoke preparePlatforms twice (?!?), once before installPluginsForNewPlatforms and once after... ?!', function () {
                     const preparePlatforms = platform_addHelper.__get__('preparePlatforms');
                     return platform_addHelper('add', hooks_mock, projectRoot, ['atari'], { save: true }).then(function (result) {
-                        expect(preparePlatforms).toHaveBeenCalledWith([ 'atari' ], '/some/path', { searchpath: undefined });
+                        expect(preparePlatforms).toHaveBeenCalledWith(['atari'], '/some/path', { searchpath: undefined });
                     });
                 });
             });
@@ -228,7 +228,7 @@ describe('cordova/platform/addHelper', function () {
                             return false;
                         }
                     });
-                    package_json_mock.cordova = { 'platforms': ['ios'] };
+                    package_json_mock.cordova = { platforms: ['ios'] };
                     cordova_util.requireNoCache.and.returnValue(package_json_mock);
                     return platform_addHelper('add', hooks_mock, projectRoot, ['android'], { save: true, restoring: true }).then(function (result) {
                         expect(fs.writeFileSync).toHaveBeenCalled();
@@ -237,8 +237,8 @@ describe('cordova/platform/addHelper', function () {
 
                 it('should use pkgJson version devDependencies, if dependencies are undefined', function () {
                     package_json_mock.dependencies = undefined;
-                    package_json_mock.cordova = { 'platforms': ['ios'] };
-                    package_json_mock.devDependencies['ios'] = {};
+                    package_json_mock.cordova = { platforms: ['ios'] };
+                    package_json_mock.devDependencies.ios = {};
                     cordova_util.requireNoCache.and.returnValue(package_json_mock);
                     fs.existsSync.and.callFake(function (filePath) {
                         return path.basename(filePath) === 'package.json';
@@ -251,7 +251,7 @@ describe('cordova/platform/addHelper', function () {
                 });
 
                 it('should only write the package.json file if it was modified', function () {
-                    package_json_mock.cordova = { 'platforms': ['ios'] };
+                    package_json_mock.cordova = { platforms: ['ios'] };
                     cordova_util.requireNoCache.and.returnValue(package_json_mock);
                     return platform_addHelper('add', hooks_mock, projectRoot, ['ios'], { save: true, restoring: true }).then(function (result) {
                         expect(fs.writeFileSync).not.toHaveBeenCalled();

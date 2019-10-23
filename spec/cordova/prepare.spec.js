@@ -60,7 +60,7 @@ describe('cordova/prepare', function () {
             spyOn(util, 'cdProjectRoot').and.returnValue(project_dir);
             spyOn(util, 'preProcessOptions').and.callFake(function (options) {
                 var platforms = options.platforms || [];
-                return { 'platforms': platforms };
+                return { platforms: platforms };
             });
             spyOn(prepare, 'preparePlatforms').and.returnValue(Promise.resolve());
         });
@@ -104,7 +104,7 @@ describe('cordova/prepare', function () {
                 });
             });
             it('should retrieve PlatformApi instances for each platform provided', function () {
-                return prepare({ 'platforms': ['android', 'ios'] }).then(function () {
+                return prepare({ platforms: ['android', 'ios'] }).then(function () {
                     expect(platforms.getPlatformApi).toHaveBeenCalledTimes(4);
                     // expect(platforms.getPlatformApi).toHaveBeenCalledWith(['android', path.join('some','path','platforms','android')], ['ios', path.join('some','path','platforms','ios')], ['android'], ['ios']);
                     expect(platforms.getPlatformApi).toHaveBeenCalledWith('android', path.join('/', 'some', 'path', 'platforms', 'android'));
