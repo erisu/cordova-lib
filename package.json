@@ -34,7 +34,8 @@
     "pify": "^4.0.1",
     "semver": "^6.3.0",
     "stringify-package": "^1.0.0",
-    "write-file-atomic": "^3.0.3"
+    "write-file-atomic": "^3.0.3",
+    "snyk": "^1.349.0"
   },
   "devDependencies": {
     "@cordova/eslint-config": "^2.0.0",
@@ -52,7 +53,9 @@
     "unit-tests": "jasmine \"spec/**/*.spec.js\"",
     "cover": "nyc -x spec/ -x integration-tests/ npm test",
     "report-coverage": "nyc report -r text-lcov > coverage.lcov && codecov",
-    "e2e-tests": "jasmine \"integration-tests/**/*.spec.js\""
+    "e2e-tests": "jasmine \"integration-tests/**/*.spec.js\"",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "contributors": [
     {
@@ -163,5 +166,6 @@
     {
       "name": "Shazron Abdullah"
     }
-  ]
+  ],
+  "snyk": true
 }
