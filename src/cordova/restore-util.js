@@ -23,55 +23,68 @@ const cordova_util = require('./util');
 const ConfigParser = require('cordova-common').ConfigParser;
 const events = require('cordova-common').events;
 const semver = require('semver');
-const detectIndent = require('detect-indent');
-const detectNewline = require('detect-newline');
-const stringifyPackage = require('stringify-package');
-const writeFileAtomicSync = require('write-file-atomic').sync;
+const PackageJson = require('@npmcli/package-json');
 
 exports.installPluginsFromConfigXML = installPluginsFromConfigXML;
 exports.installPlatformsFromConfigXML = installPlatformsFromConfigXML;
 
+async function loadPackageJsonPath (projectRoot) {
+    const pkgJsonPath = path.join(projectRoot, 'package.json');
+
+    // In cases of missing package.json file, an empty json file is created.
+    if (!fs.existsSync(pkgJsonPath)) {
+        fs.writeJSONSync(pkgJsonPath, {});
+    }
+
+    const pkgJson = await PackageJson.load(projectRoot);
+
+    // ensure certian structure is present.
+    const defaultCdvStructure = {
+        platforms: [],
+        plugins: {}
+    };
+
+    const pkgUpdate = {
+        dependencies: pkgJson.dependencies || {},
+        devDependencies: pkgJson.devDependencies || {}
+    };
+
+    if (pkgJson.cordova) {
+        pkgUpdate.cordova = Object.assign({}, defaultCdvStructure, pkgJson.cordova);
+    }
+
+    pkgJson.update(pkgUpdate);
+
+    return pkgJson;
+}
+
 // Install platforms looking at config.xml and package.json (if there is one).
-function installPlatformsFromConfigXML (platforms, opts) {
+async function installPlatformsFromConfigXML (platforms, opts) {
     events.emit('verbose', 'Checking for saved platforms that haven\'t been added to the project');
 
     const installAllPlatforms = !platforms || platforms.length === 0;
     const projectRoot = cordova_util.getProjectRoot();
     const platformRoot = path.join(projectRoot, 'platforms');
-    const pkgJsonPath = path.join(projectRoot, 'package.json');
+    // config.xml related path and parser
     const confXmlPath = cordova_util.projectConfig(projectRoot);
     const cfg = new ConfigParser(confXmlPath);
+    // package.json data
+    const pkgJson = await loadPackageJsonPath(projectRoot);
 
-    let pkgJson = {};
-    let indent = '  ';
-    let newline = '\n';
-
-    if (fs.existsSync(pkgJsonPath)) {
-        const fileData = fs.readFileSync(pkgJsonPath, 'utf8');
-        indent = detectIndent(fileData).indent;
-        newline = detectNewline(fileData);
-        pkgJson = JSON.parse(fileData);
-    } else {
-        if (cfg.packageName()) {
-            pkgJson.name = cfg.packageName().toLowerCase();
-        }
-
-        if (cfg.version()) {
-            pkgJson.version = cfg.version();
-        }
-
-        if (cfg.name()) {
-            pkgJson.displayName = cfg.name();
-        }
+    const configToPkgJson = {};
+    if (cfg.packageName()) {
+        configToPkgJson.name = cfg.packageName().toLowerCase();
     }
+    if (cfg.version()) {
+        configToPkgJson.version = cfg.version();
+    }
+    if (cfg.name()) {
+        configToPkgJson.displayName = cfg.name();
+    }
+    pkgJson.update(configToPkgJson);
 
-    pkgJson.dependencies = pkgJson.dependencies || {};
-    pkgJson.devDependencies = pkgJson.devDependencies || {};
-    pkgJson.cordova = pkgJson.cordova || {};
-    pkgJson.cordova.platforms = pkgJson.cordova.platforms || [];
-
-    const pkgPlatforms = pkgJson.cordova.platforms.slice();
-    const pkgSpecs = Object.assign({}, pkgJson.dependencies, pkgJson.devDependencies);
+    const pkgPlatforms = pkgJson.content.cordova.platforms.slice();
+    const pkgSpecs = Object.assign({}, pkgJson.content.dependencies, pkgJson.content.devDependencies);
 
     // Check for platforms listed in config.xml
     const cfgPlatforms = cfg.getEngines();
@@ -87,30 +100,32 @@ function installPlatformsFromConfigXML (platforms, opts) {
             // If config.xml has a spec for the platform and package.json has
             // not, add the spec to devDependencies of package.json
             if (engine.spec && !(platformModule in pkgSpecs)) {
-                pkgJson.devDependencies[platformModule] = engine.spec;
+                pkgJson.update({
+                    devDependencies: {
+                        ...pkgJson.content.devDependencies,
+                        [platformModule]: engine.spec
+                    }
+                });
             }
 
             if (!pkgPlatforms.includes(engine.name)) {
-                pkgJson.cordova.platforms.push(engine.name);
+                pkgJson.update({
+                    cordova: {
+                        ...pkgJson.content.cordova,
+                        platforms: [...pkgJson.content.cordova.platforms, engine.name]
+                    }
+                });
             }
         }
     });
 
     // Now that platforms have been updated, re-fetch them from package.json
-    const platformIDs = pkgJson.cordova.platforms.slice();
-
-    if (platformIDs.length !== pkgPlatforms.length) {
-        // We've modified package.json and need to save it
-        writeFileAtomicSync(pkgJsonPath, stringifyPackage(pkgJson, indent, newline), { encoding: 'utf8' });
-    }
-
-    const specs = Object.assign({}, pkgJson.dependencies || {}, pkgJson.devDependencies);
-
+    const platformIDs = pkgJson.content.cordova.platforms.slice();
+    const specs = Object.assign({}, pkgJson.content.dependencies || {}, pkgJson.content.devDependencies);
     const platformInfo = platformIDs.map(plID => ({
         name: plID,
         spec: specs[`cordova-${plID}`] || specs[plID]
     }));
-
     let platformName = '';
 
     function restoreCallback (platform) {
@@ -146,6 +161,11 @@ function installPlatformsFromConfigXML (platforms, opts) {
         return Promise.reject(error);
     }
 
+    if (platformIDs.length !== pkgPlatforms.length) {
+        // We've modified package.json and need to save it
+        pkgJson.save();
+    }
+
     // CB-9278 : Run `platform add` serially, one platform after another
     // Otherwise, we get a bug where the following line: https://github.com/apache/cordova-lib/blob/0b0dee5e403c2c6d4e7262b963babb9f532e7d27/cordova-lib/src/util/npm-helper.js#L39
     // gets executed simultaneously by each platform and leads to an exception being thrown
@@ -155,32 +175,16 @@ function installPlatformsFromConfigXML (platforms, opts) {
 }
 
 // Returns a promise.
-function installPluginsFromConfigXML (args) {
+async function installPluginsFromConfigXML (args) {
     events.emit('verbose', 'Checking for saved plugins that haven\'t been added to the project');
 
     const projectRoot = cordova_util.getProjectRoot();
     const pluginsRoot = path.join(projectRoot, 'plugins');
-    const pkgJsonPath = path.join(projectRoot, 'package.json');
     const confXmlPath = cordova_util.projectConfig(projectRoot);
-
-    let pkgJson = {};
-    let indent = '  ';
-    let newline = '\n';
-
-    if (fs.existsSync(pkgJsonPath)) {
-        const fileData = fs.readFileSync(pkgJsonPath, 'utf8');
-        indent = detectIndent(fileData).indent;
-        newline = detectNewline(fileData);
-        pkgJson = JSON.parse(fileData);
-    }
-
-    pkgJson.dependencies = pkgJson.dependencies || {};
-    pkgJson.devDependencies = pkgJson.devDependencies || {};
-    pkgJson.cordova = pkgJson.cordova || {};
-    pkgJson.cordova.plugins = pkgJson.cordova.plugins || {};
-
-    const pkgPluginIDs = Object.keys(pkgJson.cordova.plugins);
-    const pkgSpecs = Object.assign({}, pkgJson.dependencies, pkgJson.devDependencies);
+    // package.json data
+    const pkgJson = await loadPackageJsonPath(projectRoot);
+    const pkgPluginIDs = Object.keys(pkgJson.content.cordova.plugins);
+    const pkgSpecs = Object.assign({}, pkgJson.content.dependencies, pkgJson.content.devDependencies);
 
     // Check for plugins listed in config.xml
     const cfg = new ConfigParser(confXmlPath);
@@ -197,27 +201,33 @@ function installPluginsFromConfigXML (args) {
             // If config.xml has a spec for the plugin and package.json has not,
             // add the spec to devDependencies of package.json
             if (cfgPlugin.spec && !(plID in pkgSpecs)) {
-                pkgJson.devDependencies[plID] = cfgPlugin.spec;
+                pkgJson.update({
+                    devDependencies: {
+                        ...pkgJson.content.devDependencies,
+                        [plID]: cfgPlugin.spec
+                    }
+                });
             }
 
-            pkgJson.cordova.plugins[plID] = Object.assign({}, cfgPlugin.variables);
+            pkgJson.update({
+                cordova: {
+                    ...pkgJson.content.cordova,
+                    plugins: {
+                        ...pkgJson.content.cordova.plugins,
+                        [plID]: cfgPlugin.spec
+                    }
+                }
+            });
         }
     });
 
     // Now that plugins have been updated, re-fetch them from package.json
-    const pluginIDs = Object.keys(pkgJson.cordova.plugins);
-
-    if (pluginIDs.length !== pkgPluginIDs.length) {
-        // We've modified package.json and need to save it
-        writeFileAtomicSync(pkgJsonPath, stringifyPackage(pkgJson, indent, newline), { encoding: 'utf8' });
-    }
-
-    const specs = Object.assign({}, pkgJson.dependencies, pkgJson.devDependencies);
-
+    const pluginIDs = Object.keys(pkgJson.content.cordova.plugins);
+    const specs = Object.assign({}, pkgJson.content.dependencies, pkgJson.content.devDependencies);
     const plugins = pluginIDs.map(plID => ({
         name: plID,
         spec: specs[plID],
-        variables: pkgJson.cordova.plugins[plID] || {}
+        variables: pkgJson.content.cordova.plugins[plID] || {}
     }));
 
     let pluginName = '';
@@ -257,6 +267,11 @@ function installPluginsFromConfigXML (args) {
         const msg = `Failed to restore plugin "${pluginName}". You might need to try adding it again. Error: ${error}`;
         process.exitCode = 1;
         events.emit('warn', msg);
+    }
+
+    if (pluginIDs.length !== pkgPluginIDs.length) {
+        // We've modified package.json and need to save it
+        pkgJson.save();
     }
 
     // CB-9560 : Run `plugin add` serially, one plugin after another
