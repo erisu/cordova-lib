@@ -214,7 +214,7 @@ async function installPluginsFromConfigXML (args) {
                     ...pkgJson.content.cordova,
                     plugins: {
                         ...pkgJson.content.cordova.plugins,
-                        [plID]: cfgPlugin.spec
+                        [plID]: Object.assign({}, cfgPlugin.variables)
                     }
                 }
             });
