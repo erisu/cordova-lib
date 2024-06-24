@@ -33,7 +33,7 @@ async function loadPackageJsonPath (projectRoot) {
 
     // In cases of missing package.json file, an empty json file is created.
     if (!fs.existsSync(pkgJsonPath)) {
-        fs.writeJSONSync(pkgJsonPath, {});
+        fs.writeFileSync(pkgJsonPath, '{}', 'utf8');
     }
 
     const pkgJson = await PackageJson.load(projectRoot);
