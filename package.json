@@ -21,7 +21,6 @@
     "globby": "^11.1.0",
     "init-package-json": "^6.0.0",
     "md5-file": "^5.0.0",
-    "pify": "^5.0.0",
     "semver": "^7.5.0"
   },
   "devDependencies": {
