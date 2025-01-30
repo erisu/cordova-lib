@@ -26,11 +26,9 @@ const events = require('cordova-common').events;
 const cordova_util = require('../util');
 const promiseutil = require('../../util/promise-util');
 const platforms = require('../../platforms');
-const detectIndent = require('detect-indent');
-const detectNewline = require('detect-newline');
-const stringifyPackage = require('stringify-package');
 const getPlatformDetailsFromDir = require('./getPlatformDetailsFromDir');
 const preparePlatforms = require('../prepare/platforms');
+const PackageJson = require('@npmcli/package-json');
 
 module.exports = addHelper;
 module.exports.getVersionFromConfigFile = getVersionFromConfigFile;
@@ -198,38 +196,28 @@ function addHelper (cmd, hooksRunner, projectRoot, targets, opts) {
                             }
                         });
                 });
-            }).then(function () {
-                // save installed platforms to cordova.platforms array in package.json
-                let pkgJson;
-                const pkgJsonPath = path.join(projectRoot, 'package.json');
-                let modifiedPkgJson = false;
+            }).then(async function () {
+                const pkgJson = await PackageJson.load(projectRoot);
+                const modifiedPkgJson = {};
 
-                if (fs.existsSync(pkgJsonPath)) {
-                    pkgJson = cordova_util.requireNoCache(path.join(pkgJsonPath));
+                if (!pkgJson.content?.cordova) {
+                    modifiedPkgJson.cordova = {};
                 }
 
-                if (pkgJson === undefined) {
-                    return;
+                if (!pkgJson.content?.cordova?.platforms) {
+                    modifiedPkgJson.cordova.platforms = [];
                 }
-                if (pkgJson.cordova === undefined) {
-                    pkgJson.cordova = {};
-                }
-                if (pkgJson.cordova.platforms === undefined) {
-                    pkgJson.cordova.platforms = [];
-                }
+
                 platformsToSave.forEach(function (plat) {
-                    if (pkgJson.cordova.platforms.indexOf(plat) === -1) {
+                    if (pkgJson.content?.cordova?.platforms?.includes(plat)) {
                         events.emit('verbose', 'adding ' + plat + ' to cordova.platforms array in package.json');
-                        pkgJson.cordova.platforms.push(plat);
-                        modifiedPkgJson = true;
+                        modifiedPkgJson.cordova.platforms.push(plat);
                     }
                 });
-                // Save to package.json.
-                if (modifiedPkgJson === true) {
-                    const file = fs.readFileSync(pkgJsonPath, 'utf8');
-                    const indent = detectIndent(file).indent || '  ';
-                    const newline = detectNewline(file);
-                    fs.writeFileSync(pkgJsonPath, stringifyPackage(pkgJson, indent, newline), 'utf8');
+
+                if (Object.keys(modifiedPkgJson).length > 0) {
+                    pkgJson.update(modifiedPkgJson);
+                    return await pkgJson.save();
                 }
             });
         }).then(function () {

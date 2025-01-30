@@ -24,9 +24,7 @@ const npmUninstall = require('cordova-fetch').uninstall;
 const cordova_util = require('../util');
 const promiseutil = require('../../util/promise-util');
 const platforms = require('../../platforms/platforms');
-const detectIndent = require('detect-indent');
-const detectNewline = require('detect-newline');
-const stringifyPackage = require('stringify-package');
+const PackageJson = require('@npmcli/package-json');
 
 module.exports = remove;
 
@@ -40,15 +38,12 @@ function remove (hooksRunner, projectRoot, targets, opts) {
                 fs.rmSync(path.join(projectRoot, 'platforms', target), { recursive: true, force: true });
                 cordova_util.removePlatformPluginsJson(projectRoot, target);
             });
-        }).then(function () {
-            let modifiedPkgJson = false;
-            let pkgJson;
-            const pkgJsonPath = path.join(projectRoot, 'package.json');
-            // If statement to see if pkgJsonPath exists in the filesystem
-            if (fs.existsSync(pkgJsonPath)) {
-                pkgJson = cordova_util.requireNoCache(pkgJsonPath);
-            }
+        }).then(async function () {
+            const pkgJson = await PackageJson.load(projectRoot);
+
             if (opts.save) {
+                let hasUpdatedPackage = false;
+
                 targets.forEach(function (target) {
                     const platformName = target.split('@')[0];
                     const xml = cordova_util.projectConfig(projectRoot);
@@ -59,22 +54,21 @@ function remove (hooksRunner, projectRoot, targets, opts) {
                         cfg.write();
                     }
                     // If package.json exists and contains a specified platform in cordova.platforms, it will be removed.
-                    if (pkgJson !== undefined && pkgJson.cordova !== undefined && pkgJson.cordova.platforms !== undefined) {
-                        const index = pkgJson.cordova.platforms.indexOf(platformName);
-                        // Check if platform exists in platforms array.
-                        if (pkgJson.cordova.platforms !== undefined && index > -1) {
-                            events.emit('log', 'Removing ' + platformName + ' from cordova.platforms array in package.json');
-                            pkgJson.cordova.platforms.splice(index, 1);
-                            modifiedPkgJson = true;
-                        }
+                    if (pkgJson?.content?.cordova?.platforms?.includes(platformName)) {
+                        events.emit('log', 'Removing ' + platformName + ' from cordova.platforms array in package.json');
+                        pkgJson.update({
+                            cordova: {
+                                platforms: [
+                                    ...pkgJson.content.cordova.platforms.filter(p => p !== platformName)
+                                ]
+                            }
+                        });
+                        hasUpdatedPackage = true;
                     }
                 });
-                // Write out new package.json if changes have been made.
-                if (modifiedPkgJson === true) {
-                    const file = fs.readFileSync(pkgJsonPath, 'utf8');
-                    const indent = detectIndent(file).indent || '  ';
-                    const newline = detectNewline(file);
-                    fs.writeFileSync(pkgJsonPath, stringifyPackage(pkgJson, indent, newline), 'utf8');
+
+                if (hasUpdatedPackage) {
+                    return await pkgJson.save();
                 }
             }
         }).then(function () {
