@@ -29,7 +29,6 @@ const metadata = require('../../plugman/util/metadata');
 const PluginInfoProvider = require('cordova-common').PluginInfoProvider;
 const { Q_chainmap } = require('../../util/promise-util');
 const preparePlatforms = require('../prepare/platforms');
-const PackageJson = require('@npmcli/package-json');
 
 module.exports = remove;
 module.exports.validatePluginId = validatePluginId;
@@ -130,20 +129,23 @@ function remove (projectRoot, targets, hooksRunner, opts) {
     }
 
     async function persistRemovalToPkg (target) {
-        const pkgJson = await PackageJson.load(projectRoot);
-
-        // If package.json exists and contains a specified platform in cordova.platforms, it will be removed.
-        if (pkgJson?.content?.cordova?.plugins?.[target]) {
-            events.emit('log', 'Removing ' + target + ' from package.json');
-
-            const { [target]: _, ...updatedPlugins } = pkgJson.content.cordova.plugins;
-
-            pkgJson.update({
-                cordova: {
-                    plugins: updatedPlugins
-                }
-            });
-            pkgJson.save();
+        // Load the application's package.json
+        const pkgJson = await cordova_util.loadPackageJson(projectRoot);
+        // Get current cordova structure
+        const cordova = pkgJson.content.cordova;
+        // Get the current plugins
+        const plugins = cordova.plugins;
+        // Check if the targeted plugin exists on scope
+        if (plugins[target]) {
+            events.emit('log', `Removing plugin "${target}" from package.json`);
+            // Create an updated plugin list with target removed
+            const { [target]: _, ...updatedPlugins } = plugins;
+            // Update the Cordova scope..
+            cordova.plugins = updatedPlugins;
+            // Update package.json
+            pkgJson.update({ cordova });
+            // Save the changes
+            await pkgJson.save();
         }
     }
 }

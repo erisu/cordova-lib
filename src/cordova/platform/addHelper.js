@@ -28,7 +28,6 @@ const promiseutil = require('../../util/promise-util');
 const platforms = require('../../platforms');
 const getPlatformDetailsFromDir = require('./getPlatformDetailsFromDir');
 const preparePlatforms = require('../prepare/platforms');
-const PackageJson = require('@npmcli/package-json');
 
 module.exports = addHelper;
 module.exports.getVersionFromConfigFile = getVersionFromConfigFile;
@@ -197,27 +196,27 @@ function addHelper (cmd, hooksRunner, projectRoot, targets, opts) {
                         });
                 });
             }).then(async function () {
-                const pkgJson = await PackageJson.load(projectRoot);
-                const modifiedPkgJson = {};
-
-                if (!pkgJson.content?.cordova) {
-                    modifiedPkgJson.cordova = {};
-                }
-
-                if (!pkgJson.content?.cordova?.platforms) {
-                    modifiedPkgJson.cordova.platforms = [];
-                }
-
-                platformsToSave.forEach(function (plat) {
-                    if (pkgJson.content?.cordova?.platforms?.includes(plat)) {
-                        events.emit('verbose', 'adding ' + plat + ' to cordova.platforms array in package.json');
-                        modifiedPkgJson.cordova.platforms.push(plat);
+                // Load the application's package.json
+                const pkgJson = await cordova_util.loadPackageJson(projectRoot);
+                // Get current cordova structure
+                const cordova = pkgJson.content.cordova;
+                // Get current platforms
+                const platforms = cordova.platforms;
+                // flag to determin ig we should update and save changes
+                let hasModifiedPackage = false;
+                // Loop each platform thats being added and adding only new ones
+                platformsToSave.forEach(platform => {
+                    if (!platforms.includes(platform)) {
+                        events.emit('verbose', `Adding platform "${platform}" to cordova.platforms array in package.json`);
+                        platforms.push(platform);
+                        hasModifiedPackage = true;
                     }
                 });
-
-                if (Object.keys(modifiedPkgJson).length > 0) {
-                    pkgJson.update(modifiedPkgJson);
-                    return await pkgJson.save();
+                // If there were changes, update and save package.json changes
+                if (hasModifiedPackage) {
+                    cordova.platforms = platforms;
+                    pkgJson.update({ cordova });
+                    await pkgJson.save();
                 }
             });
         }).then(function () {

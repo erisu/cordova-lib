@@ -24,7 +24,6 @@ const npmUninstall = require('cordova-fetch').uninstall;
 const cordova_util = require('../util');
 const promiseutil = require('../../util/promise-util');
 const platforms = require('../../platforms/platforms');
-const PackageJson = require('@npmcli/package-json');
 
 module.exports = remove;
 
@@ -39,37 +38,34 @@ function remove (hooksRunner, projectRoot, targets, opts) {
                 cordova_util.removePlatformPluginsJson(projectRoot, target);
             });
         }).then(async function () {
-            const pkgJson = await PackageJson.load(projectRoot);
-
             if (opts.save) {
-                let hasUpdatedPackage = false;
+                // Load the application's package.json
+                const pkgJson = await cordova_util.loadPackageJson(projectRoot);
+                // Get current cordova structure
+                const cordova = pkgJson.content.cordova;
+                // Get the current platforms
+                const platforms = cordova.platforms;
+                // Remove version information from the targeted platforms to remove.
+                const platformNames = targets.map(platform => platform.split('@')[0]);
+                // Create updated platforms list for package.json update.
+                const updatedPlatforms = platforms.filter(platform => !platformNames.includes(platform));
+                cordova.platforms = updatedPlatforms;
+                // Update package.json
+                pkgJson.update({ cordova });
+                // Save the changes
+                await pkgJson.save();
 
-                targets.forEach(function (target) {
-                    const platformName = target.split('@')[0];
+                events.emit('log', `Removing the following platform(s) "${platformNames.join(', ')}" from cordova.platforms array in package.json`);
+
+                platformNames.forEach(platformName => {
                     const xml = cordova_util.projectConfig(projectRoot);
                     const cfg = new ConfigParser(xml);
                     if (cfg.getEngines && cfg.getEngines().some(function (e) { return e.name === platformName; })) {
-                        events.emit('log', 'Removing platform ' + target + ' from config.xml file...');
+                        events.emit('log', `Removing platform "${platformName}" from config.xml file...`);
                         cfg.removeEngine(platformName);
                         cfg.write();
                     }
-                    // If package.json exists and contains a specified platform in cordova.platforms, it will be removed.
-                    if (pkgJson?.content?.cordova?.platforms?.includes(platformName)) {
-                        events.emit('log', 'Removing ' + platformName + ' from cordova.platforms array in package.json');
-                        pkgJson.update({
-                            cordova: {
-                                platforms: [
-                                    ...pkgJson.content.cordova.platforms.filter(p => p !== platformName)
-                                ]
-                            }
-                        });
-                        hasUpdatedPackage = true;
-                    }
                 });
-
-                if (hasUpdatedPackage) {
-                    return await pkgJson.save();
-                }
             }
         }).then(function () {
             // Remove targets from platforms.json.

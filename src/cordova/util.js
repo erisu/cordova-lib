@@ -22,6 +22,7 @@ const path = require('node:path');
 const events = require('cordova-common').events;
 const CordovaError = require('cordova-common').CordovaError;
 const globby = require('globby');
+const PackageJson = require('@npmcli/package-json');
 
 let origCwd = null;
 
@@ -333,3 +334,28 @@ function getPlatformApiFunction (dir, platform) {
     events.emit('verbose', `Loaded API for ${platform} project ${dir}`);
     return PlatformApi;
 }
+
+module.exports.loadPackageJson = async (project_dir) => {
+    const pkgJson = await PackageJson.load(project_dir);
+    // If the cordova scope is missing, it must be written out.
+    let shouldUpdatePackage = !pkgJson.content.cordova;
+    // Take exisiting scope or beging building up the scope.
+    const cordovaScope = pkgJson.content.cordova || {};
+    // Make sure platforms exists
+    if (!cordovaScope.platforms) {
+        cordovaScope.platforms = [];
+        shouldUpdatePackage = true;
+    }
+    // Make sure plugins exists
+    if (!cordovaScope.plugins) {
+        cordovaScope.plugins = {};
+        shouldUpdatePackage = true;
+    }
+    if (shouldUpdatePackage) {
+        pkgJson.update({
+            cordova: cordovaScope
+        });
+        pkgJson.save();
+    }
+    return pkgJson;
+};

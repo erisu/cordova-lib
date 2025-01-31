@@ -32,7 +32,6 @@ const CordovaError = require('cordova-common').CordovaError;
 const PluginInfoProvider = require('cordova-common').PluginInfoProvider;
 const events = require('cordova-common').events;
 const preparePlatforms = require('../prepare/platforms');
-const PackageJson = require('@npmcli/package-json');
 
 module.exports = add;
 module.exports.determinePluginTarget = determinePluginTarget;
@@ -132,24 +131,20 @@ function add (projectRoot, hooksRunner, opts) {
                     })
                         .then(_ => pluginInfo);
                 }).then(async function (pluginInfo) {
-                    const pkgJson = await PackageJson.load(projectRoot);
+                    // Load the application's package.json
+                    const pkgJson = await cordova_util.loadPackageJson(projectRoot);
                     // save to package.json
                     if (opts.save) {
-                        // If package.json exists, the plugin object and plugin name
-                        // will be added to package.json if not already there.
-
-                        const currentPlugins = pkgJson.content.cordova?.plugins ?? {};
-
-                        events.emit('log', 'Adding ' + pluginInfo.id + ' to package.json');
-                        pkgJson.update({
-                            cordova: {
-                                plugins: {
-                                    ...currentPlugins,
-                                    [pluginInfo.id]: opts.cli_variables
-                                }
-                            }
-                        });
+                        // Get current cordova structure
+                        const cordova = pkgJson.content.cordova;
+                        // Add the new platform
+                        cordova.platforms[pluginInfo.id] = opts.cli_variables;
+                        // Update package.json
+                        pkgJson.update({ cordova });
+                        // Save the changes
                         pkgJson.save();
+
+                        events.emit('log', `Adding platform "${pluginInfo.id}" to package.json`);
 
                         const src = module.exports.parseSource(target, opts);
                         const attributes = {
