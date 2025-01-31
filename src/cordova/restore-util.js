@@ -23,40 +23,9 @@ const cordova_util = require('./util');
 const ConfigParser = require('cordova-common').ConfigParser;
 const events = require('cordova-common').events;
 const semver = require('semver');
-const PackageJson = require('@npmcli/package-json');
 
 exports.installPluginsFromConfigXML = installPluginsFromConfigXML;
 exports.installPlatformsFromConfigXML = installPlatformsFromConfigXML;
-
-async function loadPackageJsonPath (projectRoot) {
-    const pkgJsonPath = path.join(projectRoot, 'package.json');
-
-    // In cases of missing package.json file, an empty json file is created.
-    if (!fs.existsSync(pkgJsonPath)) {
-        fs.writeFileSync(pkgJsonPath, '{}', 'utf8');
-    }
-
-    const pkgJson = await PackageJson.load(projectRoot);
-
-    // ensure certian structure is present.
-    const defaultCdvStructure = {
-        platforms: [],
-        plugins: {}
-    };
-
-    const pkgUpdate = {
-        dependencies: pkgJson.dependencies || {},
-        devDependencies: pkgJson.devDependencies || {}
-    };
-
-    if (pkgJson.cordova) {
-        pkgUpdate.cordova = Object.assign({}, defaultCdvStructure, pkgJson.cordova);
-    }
-
-    pkgJson.update(pkgUpdate);
-
-    return pkgJson;
-}
 
 // Install platforms looking at config.xml and package.json (if there is one).
 async function installPlatformsFromConfigXML (platforms, opts) {
@@ -69,7 +38,7 @@ async function installPlatformsFromConfigXML (platforms, opts) {
     const confXmlPath = cordova_util.projectConfig(projectRoot);
     const cfg = new ConfigParser(confXmlPath);
     // package.json data
-    const pkgJson = await loadPackageJsonPath(projectRoot);
+    const pkgJson = await cordova_util.loadPackageJson(projectRoot);
 
     const configToPkgJson = {};
     if (cfg.packageName()) {
@@ -182,7 +151,7 @@ async function installPluginsFromConfigXML (args) {
     const pluginsRoot = path.join(projectRoot, 'plugins');
     const confXmlPath = cordova_util.projectConfig(projectRoot);
     // package.json data
-    const pkgJson = await loadPackageJsonPath(projectRoot);
+    const pkgJson = await cordova_util.loadPackageJson(projectRoot);
     const pkgPluginIDs = Object.keys(pkgJson.content.cordova.plugins);
     const pkgSpecs = Object.assign({}, pkgJson.content.dependencies, pkgJson.content.devDependencies);
 

@@ -336,6 +336,12 @@ function getPlatformApiFunction (dir, platform) {
 }
 
 module.exports.loadPackageJson = async (project_dir) => {
+    const pkgJsonPath = path.join(project_dir, 'package.json');
+    // In cases of missing package.json file, an empty json file is created.
+    if (!fs.existsSync(pkgJsonPath)) {
+        fs.writeFileSync(pkgJsonPath, '{}', 'utf8');
+    }
+
     const pkgJson = await PackageJson.load(project_dir);
     // If the cordova scope is missing, it must be written out.
     let shouldUpdatePackage = !pkgJson.content.cordova;
