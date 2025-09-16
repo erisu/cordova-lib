@@ -6,7 +6,9 @@
     to you under the Apache License, Version 2.0 (the
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -17,6 +19,7 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const tmp = require('tmp');
 const util = require('node:util');
 const events = require('cordova-common').events;
 const rewire = require('rewire');
@@ -25,12 +28,20 @@ const platforms = require('../../../src/platforms');
 const plugman = require('../../../src/plugman/plugman');
 const fetch_metadata = require('../../../src/plugman/util/metadata');
 
+tmp.setGracefulCleanup();
+
 describe('cordova/platform/addHelper', function () {
-    const projectRoot = '/some/path';
+    let projectRoot;
     let cfg_parser_mock, fake_platform, fetch_mock, hooks_mock,
         package_json_mock, platform_addHelper, platform_api_mock, prepare_mock;
 
     beforeEach(function () {
+        const srcFixture = path.resolve('./spec/cordova/fixtures/defaultProject');
+        const tmpDir = tmp.dirSync({ unsafeCleanup: true, prefix: 'cdv-add-helper-spec' });
+        projectRoot = tmpDir.name;
+        fs.cpSync(srcFixture, projectRoot, { recursive: true });
+        console.log('Created Temp Directory: ' + projectRoot);
+
         fake_platform = {
             platform: 'atari'
         };
@@ -109,7 +120,7 @@ describe('cordova/platform/addHelper', function () {
         });
 
         it('should throw if platform was already added before adding', function () {
-            fs.existsSync.and.returnValue('/some/path/platforms/ios');
+            fs.existsSync.and.returnValue(path.join(projectRoot, 'platforms/ios'));
             return expectAsync(
                 platform_addHelper('add', hooks_mock, projectRoot, ['ios'])
             ).toBeRejectedWithError(/already added\./);
@@ -198,7 +209,7 @@ describe('cordova/platform/addHelper', function () {
                 it('should invoke preparePlatforms twice (?!?), once before installPluginsForNewPlatforms and once after... ?!', function () {
                     const preparePlatforms = platform_addHelper.__get__('preparePlatforms');
                     return platform_addHelper('add', hooks_mock, projectRoot, ['atari'], { save: true }).then(function (result) {
-                        expect(preparePlatforms).toHaveBeenCalledWith(['atari'], '/some/path', { searchpath: undefined });
+                        expect(preparePlatforms).toHaveBeenCalledWith(['atari'], projectRoot, { searchpath: undefined });
                     });
                 });
             });
@@ -316,9 +327,9 @@ describe('cordova/platform/addHelper', function () {
                 expect(plugman.install).toHaveBeenCalledTimes(1);
                 expect(plugman.install).toHaveBeenCalledWith(
                     'atari',
-                    path.normalize('/some/path/platforms/atari'),
+                    path.normalize(path.join(projectRoot, 'platforms/atari')),
                     'cordova-plugin-whitelist',
-                    path.normalize('/some/path/plugins'),
+                    path.normalize(path.join(projectRoot, 'plugins')),
                     {
                         searchpath: undefined,
                         usePlatformWww: true,

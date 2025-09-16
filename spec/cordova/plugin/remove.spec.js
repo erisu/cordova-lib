@@ -7,7 +7,7 @@
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
@@ -17,7 +17,9 @@
     under the License.
 */
 
+const path = require('node:path');
 const fs = require('node:fs');
+const tmp = require('tmp');
 const timers = require('node:timers/promises');
 const rewire = require('rewire');
 const remove = rewire('../../../src/cordova/plugin/remove');
@@ -27,8 +29,10 @@ const events = require('cordova-common').events;
 const plugman = require('../../../src/plugman/plugman');
 const plugin_util = require('../../../src/cordova/plugin/util');
 
+tmp.setGracefulCleanup();
+
 describe('cordova/plugin/remove', function () {
-    const projectRoot = '/some/path';
+    let projectRoot;
     let hook_mock;
     const cfg_parser_mock = function () {};
     const plugin_info_provider_mock = function () {};
@@ -40,6 +44,12 @@ describe('cordova/plugin/remove', function () {
     package_json_mock.cordova.plugins = {};
 
     beforeEach(function () {
+        const srcFixture = path.resolve('./spec/cordova/fixtures/defaultProject');
+        const tmpDir = tmp.dirSync({ unsafeCleanup: true, prefix: 'cdv-plugin-remove-spec' });
+        projectRoot = tmpDir.name;
+        fs.cpSync(srcFixture, projectRoot, { recursive: true });
+        console.log('Created Temp Directory: ' + projectRoot);
+
         spyOn(events, 'emit');
         spyOn(fs, 'writeFileSync');
         spyOn(fs, 'existsSync');

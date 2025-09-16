@@ -7,7 +7,7 @@
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
@@ -16,18 +16,30 @@
     specific language governing permissions and limitations
     under the License.
 */
+
+const path = require('node:path');
+const fs = require('node:fs');
+const tmp = require('tmp');
 const rewire = require('rewire');
 const platforms = require('../../src/platforms/platforms');
 const HooksRunner = require('../../src/hooks/HooksRunner');
 const util = require('../../src/cordova/util');
 
+tmp.setGracefulCleanup();
+
 describe('build command', function () {
-    const project_dir = '/some/path';
+    let projectRoot;
     let cordovaBuild, cordovaPrepare, cordovaCompile;
 
     beforeEach(function () {
-        spyOn(util, 'isCordova').and.returnValue(project_dir);
-        spyOn(util, 'cdProjectRoot').and.returnValue(project_dir);
+        const srcFixture = path.resolve('./spec/cordova/fixtures/defaultProject');
+        const tmpDir = tmp.dirSync({ unsafeCleanup: true, prefix: 'cdv-build-spec' });
+        projectRoot = tmpDir.name;
+        fs.cpSync(srcFixture, projectRoot, { recursive: true });
+        console.log('Created Temp Directory: ' + projectRoot);
+
+        spyOn(util, 'isCordova').and.returnValue(projectRoot);
+        spyOn(util, 'cdProjectRoot').and.returnValue(projectRoot);
         spyOn(util, 'listPlatforms').and.returnValue(Object.keys(platforms));
         spyOn(HooksRunner.prototype, 'fire').and.returnValue(Promise.resolve());
 
@@ -36,6 +48,7 @@ describe('build command', function () {
         cordovaCompile = jasmine.createSpy('cordovaCompile').and.returnValue(Promise.resolve());
         cordovaBuild.__set__({ cordovaPrepare, cordovaCompile });
     });
+
     describe('failure', function () {
         it('Test 001 : should not run inside a project with no platforms', function () {
             util.listPlatforms.and.returnValue([]);

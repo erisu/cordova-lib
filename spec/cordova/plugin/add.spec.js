@@ -7,7 +7,7 @@
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
@@ -17,16 +17,19 @@
     under the License.
 */
 
-const fs = require('node:fs');
 const path = require('node:path');
+const fs = require('node:fs');
+const tmp = require('tmp');
 const rewire = require('rewire');
 const plugman = require('../../../src/plugman/plugman');
 const cordova_util = require('../../../src/cordova/util');
 const events = require('cordova-common').events;
 const plugin_util = require('../../../src/cordova/plugin/util');
 
+tmp.setGracefulCleanup();
+
 describe('cordova/plugin/add', function () {
-    const projectRoot = '/some/path';
+    let projectRoot;
     let hook_mock;
     const Cfg_parser_mock = function () {};
     const plugin_info_provider_mock = function () {};
@@ -35,6 +38,12 @@ describe('cordova/plugin/add', function () {
     let add;
 
     beforeEach(function () {
+        const srcFixture = path.resolve('./spec/cordova/fixtures/defaultProject');
+        const tmpDir = tmp.dirSync({ unsafeCleanup: true, prefix: 'cdv-plugin-add-spec' });
+        projectRoot = tmpDir.name;
+        fs.cpSync(srcFixture, projectRoot, { recursive: true });
+        console.log('Created Temp Directory: ' + projectRoot);
+
         add = rewire('../../../src/cordova/plugin/add');
 
         hook_mock = jasmine.createSpyObj('hooks runner mock', ['fire']);

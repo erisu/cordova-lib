@@ -6,7 +6,9 @@
     to you under the Apache License, Version 2.0 (the
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -17,13 +19,16 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const tmp = require('tmp');
 const events = require('cordova-common').events;
 const rewire = require('rewire');
 const cordova_util = require('../../../src/cordova/util');
 const promiseutil = require('../../../src/util/promise-util');
 
+tmp.setGracefulCleanup();
+
 describe('cordova/platform/remove', function () {
-    const projectRoot = '/some/path';
+    let projectRoot;
     const cfg_parser_mock = function () {};
     let hooks_mock;
     const package_json_mock = jasmine.createSpyObj('package json mock', ['cordova', 'dependencies']);
@@ -33,6 +38,12 @@ describe('cordova/platform/remove', function () {
     let platform_remove;
 
     beforeEach(function () {
+        const srcFixture = path.resolve('./spec/cordova/fixtures/defaultProject');
+        const tmpDir = tmp.dirSync({ unsafeCleanup: true, prefix: 'cdv-platform-remove-spec' });
+        projectRoot = tmpDir.name;
+        fs.cpSync(srcFixture, projectRoot, { recursive: true });
+        console.log('Created Temp Directory: ' + projectRoot);
+
         hooks_mock = jasmine.createSpyObj('hooksRunner mock', ['fire']);
         hooks_mock.fire.and.returnValue(Promise.resolve());
         cfg_parser_mock.prototype = jasmine.createSpyObj('config parser mock', ['write', 'getEngines', 'removeEngine']);
