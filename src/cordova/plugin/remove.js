@@ -7,7 +7,7 @@
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
@@ -27,9 +27,6 @@ const plugin_util = require('./util');
 const plugman = require('../../plugman/plugman');
 const metadata = require('../../plugman/util/metadata');
 const PluginInfoProvider = require('cordova-common').PluginInfoProvider;
-const detectIndent = require('detect-indent');
-const detectNewline = require('detect-newline');
-const stringifyPackage = require('stringify-package');
 const { Q_chainmap } = require('../../util/promise-util');
 const preparePlatforms = require('../prepare/platforms');
 
@@ -81,10 +78,10 @@ function remove (projectRoot, targets, hooksRunner, opts) {
             }).then(function () {
                 // TODO: Should only uninstallPlugin when no platforms have it.
                 return plugman.uninstall.uninstallPlugin(target, pluginPath, opts);
-            }).then(function () {
+            }).then(async function () {
                 if (!opts.save) return;
                 persistRemovalToCfg(target);
-                persistRemovalToPkg(target);
+                await persistRemovalToPkg(target);
             }).then(function () {
                 // Remove plugin from fetch.json
                 events.emit('verbose', 'Removing plugin ' + target + ' from fetch.json');
@@ -131,24 +128,24 @@ function remove (projectRoot, targets, hooksRunner, opts) {
         }
     }
 
-    function persistRemovalToPkg (target) {
-        let pkgJson;
-        const pkgJsonPath = path.join(projectRoot, 'package.json');
-        // If statement to see if pkgJsonPath exists in the filesystem
-        if (fs.existsSync(pkgJsonPath)) {
-            // delete any previous caches of require(package.json)
-            pkgJson = cordova_util.requireNoCache(pkgJsonPath);
-        }
-        // If package.json exists and contains a specified plugin in cordova['plugins'], it will be removed
-        if (pkgJson !== undefined && pkgJson.cordova !== undefined && pkgJson.cordova.plugins !== undefined) {
-            events.emit('log', 'Removing ' + target + ' from package.json');
-            // Remove plugin from package.json
-            delete pkgJson.cordova.plugins[target];
-            // Write out new package.json with plugin removed correctly.
-            const file = fs.readFileSync(pkgJsonPath, 'utf8');
-            const indent = detectIndent(file).indent || '  ';
-            const newline = detectNewline(file);
-            fs.writeFileSync(pkgJsonPath, stringifyPackage(pkgJson, indent, newline), 'utf8');
+    async function persistRemovalToPkg (target) {
+        // Load the application's package.json
+        const pkgJson = await cordova_util.loadPackageJson(projectRoot);
+        // Get current cordova structure
+        const cordova = pkgJson.content.cordova;
+        // Get the current plugins
+        const plugins = cordova.plugins;
+        // Check if the targeted plugin exists on scope
+        if (plugins[target]) {
+            events.emit('log', `Removing plugin "${target}" from package.json`);
+            // Create an updated plugin list with target removed
+            const { [target]: _, ...updatedPlugins } = plugins;
+            // Update the Cordova scope..
+            cordova.plugins = updatedPlugins;
+            // Update package.json
+            pkgJson.update({ cordova });
+            // Save the changes
+            await pkgJson.save();
         }
     }
 }

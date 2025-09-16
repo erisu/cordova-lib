@@ -7,7 +7,7 @@
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
@@ -21,9 +21,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const semver = require('semver');
 const url = require('url');
-const detectIndent = require('detect-indent');
-const detectNewline = require('detect-newline');
-const stringifyPackage = require('stringify-package');
 const cordova_util = require('../util');
 const plugin_util = require('./util');
 const cordova_pkgJson = require('../../../package.json');
@@ -133,32 +130,21 @@ function add (projectRoot, hooksRunner, opts) {
                             });
                     })
                         .then(_ => pluginInfo);
-                }).then(function (pluginInfo) {
-                    let pkgJson;
-                    const pkgJsonPath = path.join(projectRoot, 'package.json');
-
+                }).then(async function (pluginInfo) {
+                    // Load the application's package.json
+                    const pkgJson = await cordova_util.loadPackageJson(projectRoot);
                     // save to package.json
                     if (opts.save) {
-                        // If statement to see if pkgJsonPath exists in the filesystem
-                        if (fs.existsSync(pkgJsonPath)) {
-                            // Delete any previous caches of require(package.json)
-                            pkgJson = cordova_util.requireNoCache(pkgJsonPath);
-                        }
-                        // If package.json exists, the plugin object and plugin name
-                        // will be added to package.json if not already there.
-                        if (pkgJson) {
-                            pkgJson.cordova = pkgJson.cordova || {};
-                            pkgJson.cordova.plugins = pkgJson.cordova.plugins || {};
-                            // Plugin and variables are added.
-                            pkgJson.cordova.plugins[pluginInfo.id] = opts.cli_variables;
-                            events.emit('log', 'Adding ' + pluginInfo.id + ' to package.json');
+                        // Get current cordova structure
+                        const cordova = pkgJson.content.cordova;
+                        // Add the new platform
+                        cordova.platforms[pluginInfo.id] = opts.cli_variables;
+                        // Update package.json
+                        pkgJson.update({ cordova });
+                        // Save the changes
+                        await pkgJson.save();
 
-                            // Write to package.json
-                            const file = fs.readFileSync(pkgJsonPath, 'utf8');
-                            const indent = detectIndent(file).indent || '  ';
-                            const newline = detectNewline(file);
-                            fs.writeFileSync(pkgJsonPath, stringifyPackage(pkgJson, indent, newline), 'utf8');
-                        }
+                        events.emit('log', `Adding platform "${pluginInfo.id}" to package.json`);
 
                         const src = module.exports.parseSource(target, opts);
                         const attributes = {

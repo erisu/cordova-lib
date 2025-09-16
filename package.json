@@ -11,15 +11,12 @@
     "node": ">=20.17.0 || >=22.9.0"
   },
   "dependencies": {
+    "@npmcli/package-json": "^7.0.0",
     "cordova-common": "^6.0.0",
     "cordova-fetch": "^5.0.0",
-    "detect-indent": "^6.1.0",
-    "detect-newline": "^3.1.0",
     "execa": "^5.1.1",
     "globby": "^11.1.0",
-    "semver": "^7.7.2",
-    "stringify-package": "^1.0.1",
-    "write-file-atomic": "^6.0.0"
+    "semver": "^7.7.2"
   },
   "devDependencies": {
     "@cordova/eslint-config": "^6.0.0",

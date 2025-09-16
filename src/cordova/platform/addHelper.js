@@ -6,7 +6,9 @@
     to you under the Apache License, Version 2.0 (the
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -26,9 +28,6 @@ const events = require('cordova-common').events;
 const cordova_util = require('../util');
 const promiseutil = require('../../util/promise-util');
 const platforms = require('../../platforms');
-const detectIndent = require('detect-indent');
-const detectNewline = require('detect-newline');
-const stringifyPackage = require('stringify-package');
 const getPlatformDetailsFromDir = require('./getPlatformDetailsFromDir');
 const preparePlatforms = require('../prepare/platforms');
 
@@ -198,38 +197,28 @@ function addHelper (cmd, hooksRunner, projectRoot, targets, opts) {
                             }
                         });
                 });
-            }).then(function () {
-                // save installed platforms to cordova.platforms array in package.json
-                let pkgJson;
-                const pkgJsonPath = path.join(projectRoot, 'package.json');
-                let modifiedPkgJson = false;
-
-                if (fs.existsSync(pkgJsonPath)) {
-                    pkgJson = cordova_util.requireNoCache(path.join(pkgJsonPath));
-                }
-
-                if (pkgJson === undefined) {
-                    return;
-                }
-                if (pkgJson.cordova === undefined) {
-                    pkgJson.cordova = {};
-                }
-                if (pkgJson.cordova.platforms === undefined) {
-                    pkgJson.cordova.platforms = [];
-                }
-                platformsToSave.forEach(function (plat) {
-                    if (pkgJson.cordova.platforms.indexOf(plat) === -1) {
-                        events.emit('verbose', 'adding ' + plat + ' to cordova.platforms array in package.json');
-                        pkgJson.cordova.platforms.push(plat);
-                        modifiedPkgJson = true;
+            }).then(async function () {
+                // Load the application's package.json
+                const pkgJson = await cordova_util.loadPackageJson(projectRoot);
+                // Get current cordova structure
+                const cordova = pkgJson.content.cordova;
+                // Get current platforms
+                const platforms = cordova.platforms;
+                // flag to determin ig we should update and save changes
+                let hasModifiedPackage = false;
+                // Loop each platform thats being added and adding only new ones
+                platformsToSave.forEach(platform => {
+                    if (!platforms.includes(platform)) {
+                        events.emit('verbose', `Adding platform "${platform}" to cordova.platforms array in package.json`);
+                        platforms.push(platform);
+                        hasModifiedPackage = true;
                     }
                 });
-                // Save to package.json.
-                if (modifiedPkgJson === true) {
-                    const file = fs.readFileSync(pkgJsonPath, 'utf8');
-                    const indent = detectIndent(file).indent || '  ';
-                    const newline = detectNewline(file);
-                    fs.writeFileSync(pkgJsonPath, stringifyPackage(pkgJson, indent, newline), 'utf8');
+                // If there were changes, update and save package.json changes
+                if (hasModifiedPackage) {
+                    cordova.platforms = platforms;
+                    pkgJson.update({ cordova });
+                    await pkgJson.save();
                 }
             });
         }).then(function () {

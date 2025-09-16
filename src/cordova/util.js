@@ -7,7 +7,7 @@
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
@@ -22,6 +22,7 @@ const path = require('node:path');
 const events = require('cordova-common').events;
 const CordovaError = require('cordova-common').CordovaError;
 const globby = require('globby');
+const PackageJson = require('@npmcli/package-json');
 
 let origCwd = null;
 
@@ -333,3 +334,34 @@ function getPlatformApiFunction (dir, platform) {
     events.emit('verbose', `Loaded API for ${platform} project ${dir}`);
     return PlatformApi;
 }
+
+module.exports.loadPackageJson = async (project_dir) => {
+    const pkgJsonPath = path.join(project_dir, 'package.json');
+    // In cases of missing package.json file, an empty json file is created.
+    if (!fs.existsSync(pkgJsonPath)) {
+        fs.writeFileSync(pkgJsonPath, '{}', 'utf8');
+    }
+
+    const pkgJson = await PackageJson.load(project_dir);
+    // If the cordova scope is missing, it must be written out.
+    let shouldUpdatePackage = !pkgJson.content.cordova;
+    // Take exisiting scope or beging building up the scope.
+    const cordovaScope = pkgJson.content.cordova || {};
+    // Make sure platforms exists
+    if (!cordovaScope.platforms) {
+        cordovaScope.platforms = [];
+        shouldUpdatePackage = true;
+    }
+    // Make sure plugins exists
+    if (!cordovaScope.plugins) {
+        cordovaScope.plugins = {};
+        shouldUpdatePackage = true;
+    }
+    if (shouldUpdatePackage) {
+        pkgJson.update({
+            cordova: cordovaScope
+        });
+        await pkgJson.save();
+    }
+    return pkgJson;
+};
