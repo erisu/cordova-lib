@@ -8,32 +8,40 @@
   "bugs": "https://github.com/apache/cordova-lib/issues",
   "main": "cordova-lib.js",
   "engines": {
-    "node": ">=20.17.0 || >=22.9.0"
+    "node": ">=20.17.0 || >=22.9.0",
+    "npm": ">=8.1.0"
   },
   "dependencies": {
+    "@npmcli/arborist": "^9.9.1",
     "cordova-common": "^6.0.0",
     "cordova-fetch": "^5.0.0",
     "detect-indent": "^6.1.0",
     "detect-newline": "^3.1.0",
     "execa": "^5.1.1",
     "globby": "^11.1.0",
+    "npm-package-arg": "^13.0.2",
+    "pacote": "^21.5.1",
+    "resolve": "^1.22.12",
     "semver": "^7.7.2",
     "stringify-package": "^1.0.1",
+    "which": "^5.0.0",
     "write-file-atomic": "^7.0.0"
   },
   "devDependencies": {
     "@cordova/eslint-config": "^6.0.0",
+    "@gar/promise-retry": "^1.0.3",
     "c8": "^11.0.0",
     "cordova-android": "^13.0.0",
     "elementtree": "^0.1.7",
     "jasmine": "^6.3.0",
     "jasmine-spec-reporter": "^7.0.0",
-    "rewire": "^9.0.1"
+    "rewire": "^9.0.1",
+    "tmp": "^0.2.7"
   },
   "overrides": {
-      "c8": {
-          "yargs": "^18.0.0"
-      }
+    "c8": {
+      "yargs": "^18.0.0"
+    }
   },
   "scripts": {
     "test": "npm run lint && npm run test:coverage",

@@ -17,7 +17,7 @@
     under the License.
 */
 
-const fetch = require('..');
+const fetch = require('../src/fetch');
 const uninstall = fetch.uninstall;
 
 const path = require('node:path');
@@ -33,7 +33,7 @@ const tmpDir = path.join(tmpRoot.name, 'cordova-fetch-tests');
 let opts;
 
 beforeEach(() => {
-    opts = {};
+    opts = { 'allow-git': 'root' };
     fs.mkdirSync(tmpDir, { recursive: true });
     process.chdir(tmpDir);
 });
@@ -95,7 +95,7 @@ describe('fetch/uninstall tests via npm & git', () => {
 
 describe('fetch/uninstall with --save', () => {
     beforeEach(() => {
-        opts = { save: true };
+        opts = { save: true, 'allow-git': 'root' };
         // copy package.json from spec directory to tmpDir
         fs.cpSync(path.join(__dirname, 'testpkg.json'), 'package.json');
     });
