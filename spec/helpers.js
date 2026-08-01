@@ -20,8 +20,11 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
+const rewire = require('rewire');
 const ConfigParser = require('cordova-common').ConfigParser;
 const fixtureHelper = require('./fixture-helper');
+
+const create = rewire('../src/create');
 
 // Just use Android everywhere; we're mocking out any calls to the `android` binary.
 module.exports.testPlatform = 'android';
@@ -172,6 +175,41 @@ module.exports.asymmetricMatchers = {
             jasmineToString: _ => `<pathNormalizingTo(${expectedPath})>`
         };
     }
+};
+
+function createWith (rewiring) {
+    return (...args) => create.__with__(rewiring)(() => create(...args));
+}
+module.exports.createWith = createWith;
+
+// Calls create with mocked fetch to not depend on the outside world
+module.exports.createWithMockFetch = function (tmpDir, dir, id, name, cfg, events) {
+    const mockFetchDest = path.join(tmpDir, 'mockFetchDest');
+    const templateDir = path.dirname(require.resolve('cordova-app-hello-world'));
+    const fetchSpy = jasmine.createSpy('fetchSpy')
+        .and.callFake(() => Promise.resolve(mockFetchDest));
+
+    fs.cpSync(templateDir, mockFetchDest, { recursive: true });
+    return exports.createWith({ fetch: fetchSpy })(dir, id, name, cfg, events)
+        .then(() => fetchSpy);
+};
+
+// Expect promise to get rejected with a reason matching expectedReason
+module.exports.expectRejection = function (promise, expectedReason) {
+    return promise.then(
+        () => fail('Expected promise to be rejected'),
+        reason => {
+            if (expectedReason instanceof Error) {
+                expect(reason instanceof expectedReason.constructor).toBeTruthy();
+                expect(reason.message).toContain(expectedReason.message);
+            } else if (typeof expectedReason === 'function') {
+                expect(expectedReason(reason)).toBeTruthy();
+            } else if (expectedReason !== undefined) {
+                expect(reason).toBe(expectedReason);
+            } else {
+                expect().nothing();
+            }
+        });
 };
 
 const customMatchers = {

@@ -21,9 +21,16 @@ const fs = require('node:fs');
 const rewire = require('rewire');
 const path = require('node:path');
 const requireFresh = require('import-fresh');
-const create = require('..');
+const tmp = require('tmp');
 const { CordovaError, ConfigParser } = require('cordova-common');
-const { tmpDir, createWith, createWithMockFetch, expectRejection } = require('./helpers');
+
+const create = require('../src/create');
+const { createWith, createWithMockFetch, expectRejection } = require('./helpers');
+
+tmp.setGracefulCleanup();
+
+const tmpRoot = tmp.dirSync({ unsafeCleanup: true });
+const tmpDir = path.join(tmpRoot.name, 'cordova-create-tests');
 
 const appName = 'TestBase';
 const appId = 'org.testing';
@@ -129,7 +136,7 @@ describe('create end-to-end', () => {
     it('should successfully run with Git URL', () => {
         // Create a real project with git URL as template
         opts.template = 'https://github.com/apache/cordova-app-hello-world';
-        return createWithMockFetch(project, opts)
+        return createWithMockFetch(tmpDir, project, opts)
             .then(fetchSpy => {
                 expect(fetchSpy).toHaveBeenCalledTimes(1);
                 expect(fetchSpy.calls.argsFor(0)[0]).toBe(opts.template);
@@ -140,7 +147,7 @@ describe('create end-to-end', () => {
     it('should successfully run with NPM package (specific version)', () => {
         // Create a real project with npm module as template
         opts.template = 'phonegap-template-vue-f7-tabs@1';
-        return createWithMockFetch(project, opts)
+        return createWithMockFetch(tmpDir, project, opts)
             .then(fetchSpy => {
                 expect(fetchSpy).toHaveBeenCalledTimes(1);
                 expect(fetchSpy.calls.argsFor(0)[0]).toBe(opts.template);
@@ -151,7 +158,7 @@ describe('create end-to-end', () => {
     it('should successfully run with NPM package (no specific version)', () => {
         // Create a real project with npm module as template
         opts.template = 'phonegap-template-vue-f7-tabs';
-        return createWithMockFetch(project, opts)
+        return createWithMockFetch(tmpDir, project, opts)
             .then(fetchSpy => {
                 expect(fetchSpy).toHaveBeenCalledTimes(1);
                 expect(fetchSpy.calls.argsFor(0)[0]).toBe(opts.template);
@@ -259,7 +266,7 @@ describe('cordova create needsToBeFetched', () => {
     let needsToBeFetched;
 
     beforeEach(() => {
-        needsToBeFetched = rewire('..').__get__('needsToBeFetched');
+        needsToBeFetched = rewire('../src/create').__get__('needsToBeFetched');
     });
 
     it('should recognize URLs as remote', () => {

@@ -26,7 +26,7 @@ const isObject = require('isobject');
 const pathIsInside = require('path-is-inside');
 const requireFresh = require('import-fresh');
 const validateIdentifier = require('valid-identifier');
-const fetch = require('cordova-fetch');
+const fetch = require('../fetch');
 const { CordovaError, ConfigParser } = require('cordova-common');
 
 module.exports = cordovaCreate;

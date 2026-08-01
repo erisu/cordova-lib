@@ -27,8 +27,8 @@ module.exports = defineConfig([
         'spec/cordova/fixtures/*',
         'spec/plugman/projects/*',
         'spec/plugman/plugins/*',
-        'spec/cordova/temp/*'
-
+        'spec/cordova/temp/*',
+        'spec/templates/*'
     ]),
     ...nodeConfig,
     ...nodeTestConfig.map(config => ({
