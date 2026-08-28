@@ -22,6 +22,7 @@ const path = require('node:path');
 const events = require('cordova-common').events;
 const CordovaError = require('cordova-common').CordovaError;
 const globby = require('globby');
+const { execaSync } = require('execa');
 
 let origCwd = null;
 
@@ -209,7 +210,8 @@ function getPlatformVersion (platformPath) {
         ).version();
     } catch (e) {
         // Platforms pre-Cordova 10
-        return require('execa').sync(
+
+        return execaSync(
             process.argv0, // node
             [path.join(platformPath, 'cordova/version')]
         ).stdout;

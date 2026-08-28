@@ -20,7 +20,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const execa = require('execa');
+const { execa } = require('execa');
 const ActionStack = require('cordova-common').ActionStack;
 const semver = require('semver');
 const PlatformJson = require('cordova-common').PlatformJson;

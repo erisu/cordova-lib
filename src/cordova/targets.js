@@ -18,7 +18,7 @@
 */
 
 const path = require('node:path');
-const execa = require('execa');
+const { execa } = require('execa');
 const cordova_util = require('./util');
 const events = require('cordova-common').events;
 

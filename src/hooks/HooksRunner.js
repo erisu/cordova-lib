@@ -19,7 +19,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const execa = require('execa');
+const { execa } = require('execa');
 
 const cordovaUtil = require('../cordova/util');
 const scriptsFinder = require('./scriptsFinder');

@@ -19,7 +19,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const execa = require('execa');
+const { execa } = require('execa');
 const PluginInfoProvider = require('cordova-common').PluginInfoProvider;
 const events = require('cordova-common').events;
 const CordovaError = require('cordova-common').CordovaError;
