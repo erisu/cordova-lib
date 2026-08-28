@@ -20,7 +20,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const semver = require('semver');
-const detectIndent = require('detect-indent');
+const { default: detectIndent } = require('detect-indent');
 const detectNewline = require('detect-newline');
 const stringifyPackage = require('stringify-package');
 const cordova_util = require('../util');

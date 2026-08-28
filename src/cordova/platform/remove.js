@@ -24,7 +24,7 @@ const npmUninstall = require('cordova-fetch').uninstall;
 const cordova_util = require('../util');
 const promiseutil = require('../../util/promise-util');
 const platforms = require('../../platforms/platforms');
-const detectIndent = require('detect-indent');
+const { default: detectIndent } = require('detect-indent');
 const detectNewline = require('detect-newline');
 const stringifyPackage = require('stringify-package');
 
