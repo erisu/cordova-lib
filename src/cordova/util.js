@@ -21,7 +21,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const events = require('cordova-common').events;
 const CordovaError = require('cordova-common').CordovaError;
-const globby = require('globby');
+const { globbySync } = require('globby');
 const { execaSync } = require('execa');
 
 let origCwd = null;
@@ -230,7 +230,7 @@ function getPlatformVersionOrNull (platformPath) {
 function findPlugins (pluginDir) {
     if (!fs.existsSync(pluginDir)) return [];
 
-    return globby.sync(['*', '!@*', '@*/*', '!CVS'], {
+    return globbySync(['*', '!@*', '@*/*', '!CVS'], {
         cwd: pluginDir,
         onlyDirectories: true
     });
