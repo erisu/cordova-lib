@@ -14,7 +14,7 @@
     "cordova-common": "^6.0.0",
     "cordova-fetch": "^5.0.0",
     "detect-indent": "^7.0.2",
-    "detect-newline": "^3.1.0",
+    "detect-newline": "^4.0.1",
     "execa": "^10.0.1",
     "globby": "^16.2.4",
     "semver": "^7.7.2",

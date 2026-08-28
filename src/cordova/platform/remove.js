@@ -25,7 +25,7 @@ const cordova_util = require('../util');
 const promiseutil = require('../../util/promise-util');
 const platforms = require('../../platforms/platforms');
 const { default: detectIndent } = require('detect-indent');
-const detectNewline = require('detect-newline');
+const { detectNewline } = require('detect-newline');
 const stringifyPackage = require('stringify-package');
 
 module.exports = remove;

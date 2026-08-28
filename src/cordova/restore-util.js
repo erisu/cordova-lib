@@ -24,7 +24,7 @@ const ConfigParser = require('cordova-common').ConfigParser;
 const events = require('cordova-common').events;
 const semver = require('semver');
 const { default: detectIndent } = require('detect-indent');
-const detectNewline = require('detect-newline');
+const { detectNewline } = require('detect-newline');
 const stringifyPackage = require('stringify-package');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
